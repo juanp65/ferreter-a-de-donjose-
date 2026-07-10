@@ -1,117 +1,485 @@
 {% extends 'base.html' %}
-{% block title %}Catálogo | Ferretería Don José{% endblock %}
-{% block body_class %}customer-body{% endblock %}
+
+{% block title %}
+Catálogo | Ferretería Don José
+{% endblock %}
+
+{% block body_class %}
+customer-body
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .live-search-help {
+        margin: 10px auto 0;
+        color: #6d7482;
+        font-size: 0.86rem;
+        text-align: center;
+    }
+
+    [data-product-card][hidden] {
+        display: none !important;
+    }
+
+    [data-live-search-empty][hidden] {
+        display: none !important;
+    }
+
+    .live-search-empty {
+        grid-column: 1 / -1;
+        min-height: 210px;
+    }
+
+    .storefront-search input[type="search"]::-webkit-search-cancel-button {
+        cursor: pointer;
+    }
+
+    @media (max-width: 640px) {
+        .live-search-help {
+            max-width: 290px;
+            font-size: 0.8rem;
+        }
+    }
+</style>
+{% endblock %}
+
 {% block content %}
+
 <header class="mobile-header store-header">
+
     {% if user.is_authenticated %}
-    <a class="icon-button account-icon-link" href="{% url 'cuenta' %}" aria-label="Mi cuenta">👤</a>
+        <a
+            class="icon-button account-icon-link"
+            href="{% url 'cuenta' %}"
+            aria-label="Mi cuenta"
+        >
+            👤
+        </a>
     {% else %}
-    <a class="icon-button account-icon-link" href="{% url 'login' %}" aria-label="Iniciar sesión">👤</a>
+        <a
+            class="icon-button account-icon-link"
+            href="{% url 'login' %}"
+            aria-label="Iniciar sesión"
+        >
+            👤
+        </a>
     {% endif %}
-    <a class="customer-brand" href="{% url 'catalogo' %}"><span>🏪</span><strong>Ferretería Don José</strong></a>
-    <a class="icon-button cart-link" href="{% url 'carrito' %}" aria-label="Carrito">🛒<b>{{ carrito_cantidad }}</b></a>
+
+    <a
+        class="customer-brand"
+        href="{% url 'catalogo' %}"
+    >
+        <span>🏪</span>
+        <strong>Ferretería Don José</strong>
+    </a>
+
+    <a
+        class="icon-button cart-link"
+        href="{% url 'carrito' %}"
+        aria-label="Carrito"
+    >
+        🛒
+        <b>{{ carrito_cantidad }}</b>
+    </a>
+
 </header>
 
+
 <main class="customer-shell storefront-shell">
+
+    <!-- Encabezado y buscador -->
     <section class="customer-hero storefront-hero">
-        <p class="eyebrow">Compra fácil y rápida</p>
-        <h1>Lo que necesitas para tu proyecto</h1>
-        <form method="get" class="search-box storefront-search">
-            <span>⌕</span>
-            <input type="search" name="q" value="{{ q }}" placeholder="Buscar productos...">
-            {% if categoria_seleccionada %}<input type="hidden" name="categoria" value="{{ categoria_seleccionada }}">{% endif %}
-            <button>Buscar</button>
+
+        <p class="eyebrow">
+            Compra fácil y rápida
+        </p>
+
+        <h1>
+            Lo que necesitas para tu proyecto
+        </h1>
+
+        <form
+            class="search-box storefront-search"
+            data-live-search-form
+        >
+
+            <span aria-hidden="true">
+                ⌕
+            </span>
+
+            <input
+                type="search"
+                placeholder="Buscar productos..."
+                autocomplete="off"
+                spellcheck="false"
+                aria-label="Buscar productos"
+                data-live-product-search
+            >
+
+            <button type="submit">
+                Buscar
+            </button>
+
         </form>
+
+        <p class="live-search-help">
+            Los productos aparecerán automáticamente mientras escribes.
+        </p>
+
     </section>
 
+
     <section class="catalog-layout storefront-layout">
+
+        <!-- Categorías para computador -->
         <aside class="category-sidebar">
+
             <div class="sidebar-card storefront-sidebar-card">
-                <h3>Categorías</h3>
+
+                <h3>
+                    Categorías
+                </h3>
+
                 <div class="category-list">
-                    <a class="category-link {% if not categoria_seleccionada %}active{% endif %}" href="{% url 'catalogo' %}{% if q %}?q={{ q }}{% endif %}">
+
+                    <a
+                        class="category-link
+                        {% if not categoria_seleccionada %}active{% endif %}"
+                        href="{% url 'catalogo' %}"
+                    >
                         <span>Todos</span>
                         <small>{{ categorias|length }}</small>
                     </a>
+
                     {% for categoria in categorias %}
-                        <a class="category-link {% if categoria_seleccionada == categoria.slug %}active{% endif %}" href="?categoria={{ categoria.slug }}{% if q %}&q={{ q }}{% endif %}">
-                            <span>{{ categoria.nombre }}</span>
-                            <small>Ver</small>
+
+                        <a
+                            class="category-link
+                            {% if categoria_seleccionada == categoria.slug %}
+                                active
+                            {% endif %}"
+                            href="?categoria={{ categoria.slug }}"
+                        >
+                            <span>
+                                {{ categoria.nombre }}
+                            </span>
+
+                            <small>
+                                Ver
+                            </small>
                         </a>
+
                     {% endfor %}
+
                 </div>
+
             </div>
+
         </aside>
 
+
         <div class="catalog-content storefront-content">
-            <nav class="category-strip" aria-label="Categorías" id="categorias">
-                <a class="chip {% if not categoria_seleccionada %}active{% endif %}" href="{% url 'catalogo' %}{% if q %}?q={{ q }}{% endif %}">Todos</a>
+
+            <!-- Categorías para celular -->
+            <nav
+                class="category-strip"
+                aria-label="Categorías"
+                id="categorias"
+            >
+
+                <a
+                    class="chip
+                    {% if not categoria_seleccionada %}active{% endif %}"
+                    href="{% url 'catalogo' %}"
+                >
+                    Todos
+                </a>
+
                 {% for categoria in categorias %}
-                    <a class="chip {% if categoria_seleccionada == categoria.slug %}active{% endif %}" href="?categoria={{ categoria.slug }}{% if q %}&q={{ q }}{% endif %}">{{ categoria.nombre }}</a>
+
+                    <a
+                        class="chip
+                        {% if categoria_seleccionada == categoria.slug %}
+                            active
+                        {% endif %}"
+                        href="?categoria={{ categoria.slug }}"
+                    >
+                        {{ categoria.nombre }}
+                    </a>
+
                 {% endfor %}
+
             </nav>
 
+
+            <!-- Encabezado del catálogo -->
             <div class="section-heading storefront-heading">
+
                 <div>
-                    <p class="eyebrow">Catálogo</p>
-                    <h2>Productos</h2>
+
+                    <p class="eyebrow">
+                        Catálogo
+                    </p>
+
+                    <h2>
+                        Productos
+                    </h2>
+
                 </div>
-                <span>{{ productos|length }} resultados</span>
+
+                <span data-live-results-count>
+                    {{ productos|length }}
+                    {% if productos|length == 1 %}
+                        resultado
+                    {% else %}
+                        resultados
+                    {% endif %}
+                </span>
+
             </div>
 
-            <section class="product-grid storefront-grid">
+
+            <!-- Productos -->
+            <section
+                class="product-grid storefront-grid"
+                data-product-grid
+            >
+
                 {% for producto in productos %}
-                <article class="product-card storefront-card">
-                    <div class="product-visual storefront-visual">
-                        {% if producto.imagen %}
-                            <img src="{{ producto.imagen.url }}" alt="{{ producto.nombre }}">
-                        {% else %}
-                            <span class="product-photo-placeholder">Sin foto</span>
-                        {% endif %}
-                    </div>
-                    <div class="product-info storefront-info">
-                        <small>{{ producto.categoria.nombre }}</small>
-                        <h3>{{ producto.nombre }}</h3>
-                        <strong>${{ producto.precio|floatformat:0 }}</strong>
-                        {% if producto.disponible %}
-                            <span class="status success">✓ Disponible - {{ producto.stock }} un.</span>
-                        {% else %}
-                            <span class="status danger">✕ Sin stock</span>
-                        {% endif %}
-                    </div>
-                    <form method="post" action="{% url 'agregar_carrito' producto.id %}" class="storefront-add-form">
-                        {% csrf_token %}
-                        <input type="hidden" name="next" value="{{ request.get_full_path }}">
-                        <button class="add-button storefront-add" {% if not producto.disponible %}disabled{% endif %} aria-label="Agregar {{ producto.nombre }}">{% if producto.disponible %}+{% else %}×{% endif %}</button>
-                    </form>
-                </article>
+
+                    <article
+                        class="product-card storefront-card"
+                        data-product-card
+                        data-search="
+                            {{ producto.nombre }}
+                            {{ producto.categoria.nombre }}
+                            {{ producto.descripcion }}
+                        "
+                    >
+
+                        <!-- Imagen -->
+                        <div class="product-visual storefront-visual">
+
+                            {% if producto.imagen %}
+
+                                <img
+                                    class="product-photo"
+                                    src="{{ producto.imagen.url }}"
+                                    alt="{{ producto.nombre }}"
+                                    loading="lazy"
+                                    onerror="
+                                        this.hidden = true;
+                                        this.nextElementSibling.hidden = false;
+                                    "
+                                >
+
+                                <span
+                                    class="product-photo-placeholder"
+                                    hidden
+                                >
+                                    Sin foto
+                                </span>
+
+                            {% else %}
+
+                                <span class="product-photo-placeholder">
+                                    Sin foto
+                                </span>
+
+                            {% endif %}
+
+                        </div>
+
+
+                        <!-- Información -->
+                        <div class="product-info storefront-info">
+
+                            <small>
+                                {{ producto.categoria.nombre }}
+                            </small>
+
+                            <h3>
+                                {{ producto.nombre }}
+                            </h3>
+
+                            <strong>
+                                ${{ producto.precio|floatformat:0 }}
+                            </strong>
+
+                            {% if producto.disponible %}
+
+                                <span class="status success">
+                                    ✓ Disponible - {{ producto.stock }} un.
+                                </span>
+
+                            {% else %}
+
+                                <span class="status danger">
+                                    ✕ Sin stock
+                                </span>
+
+                            {% endif %}
+
+                        </div>
+
+
+                        <!-- Agregar al carrito -->
+                        <form
+                            method="post"
+                            action="{% url 'agregar_carrito' producto.id %}"
+                            class="storefront-add-form"
+                        >
+
+                            {% csrf_token %}
+
+                            <input
+                                type="hidden"
+                                name="next"
+                                value="{{ request.get_full_path }}"
+                            >
+
+                            <button
+                                class="add-button storefront-add"
+                                {% if not producto.disponible %}
+                                    disabled
+                                {% endif %}
+                                aria-label="Agregar {{ producto.nombre }}"
+                            >
+                                {% if producto.disponible %}
+                                    +
+                                {% else %}
+                                    ×
+                                {% endif %}
+                            </button>
+
+                        </form>
+
+                    </article>
+
                 {% empty %}
-                <div class="empty-state">
-                    <span>🔎</span>
-                    <h3>No encontramos productos</h3>
-                    <p>Prueba con otra palabra o selecciona una categoría distinta.</p>
-                </div>
+
+                    <div class="empty-state">
+
+                        <span>
+                            🔎
+                        </span>
+
+                        <h3>
+                            No hay productos en esta categoría
+                        </h3>
+
+                        <p>
+                            Selecciona otra categoría para continuar.
+                        </p>
+
+                    </div>
+
                 {% endfor %}
+
+
+                <!-- Mensaje cuando la búsqueda no encuentra resultados -->
+                {% if productos %}
+
+                    <div
+                        class="empty-state live-search-empty"
+                        data-live-search-empty
+                        hidden
+                    >
+
+                        <span>
+                            🔎
+                        </span>
+
+                        <h3>
+                            No encontramos coincidencias
+                        </h3>
+
+                        <p>
+                            Prueba con otra palabra, por ejemplo:
+                            martillo, carpintería, pintura, taladro o tubo.
+                        </p>
+
+                    </div>
+
+                {% endif %}
+
             </section>
+
         </div>
+
     </section>
 
+
+    <!-- Botones inferiores -->
     <section class="customer-actions storefront-actions">
-        <a class="btn btn-whatsapp" href="{{ whatsapp_url }}" target="_blank" rel="noopener">🟢 Consultar por WhatsApp</a>
-        <a class="btn btn-outline store-buy-btn" href="{% url 'carrito' %}">🛒 Reservar / Comprar <span>{{ carrito_cantidad }}</span></a>
+
+        <a
+            class="btn btn-whatsapp"
+            href="{{ whatsapp_url }}"
+            target="_blank"
+            rel="noopener"
+        >
+            🟢 Consultar por WhatsApp
+        </a>
+
+        <a
+            class="btn btn-outline store-buy-btn"
+            href="{% url 'carrito' %}"
+        >
+            🛒 Reservar / Comprar
+            <span>{{ carrito_cantidad }}</span>
+        </a>
+
     </section>
 
-    <div class="storefront-sparkle" aria-hidden="true">✧</div>
+
+    <div
+        class="storefront-sparkle"
+        aria-hidden="true"
+    >
+        ✧
+    </div>
+
 </main>
 
+
+<!-- Navegación para celular -->
 <nav class="bottom-nav">
-    <a class="active" href="{% url 'catalogo' %}"><span>⌂</span>Inicio</a>
-    <a href="#categorias"><span>▦</span>Categorías</a>
-    <a href="{% url 'carrito' %}"><span>🛒</span>Carrito</a>
+
+    <a
+        class="active"
+        href="{% url 'catalogo' %}"
+    >
+        <span>⌂</span>
+        Inicio
+    </a>
+
+    <a href="#categorias">
+        <span>▦</span>
+        Categorías
+    </a>
+
+    <a href="{% url 'carrito' %}">
+        <span>🛒</span>
+        Carrito
+    </a>
+
     {% if user.is_authenticated %}
-    <a href="{% url 'cuenta' %}"><span>👤</span>Mi cuenta</a>
+
+        <a href="{% url 'cuenta' %}">
+            <span>👤</span>
+            Mi cuenta
+        </a>
+
     {% else %}
-    <a href="{% url 'login' %}"><span>🔐</span>Ingresar</a>
+
+        <a href="{% url 'login' %}">
+            <span>🔐</span>
+            Ingresar
+        </a>
+
     {% endif %}
+
 </nav>
+
 {% endblock %}
