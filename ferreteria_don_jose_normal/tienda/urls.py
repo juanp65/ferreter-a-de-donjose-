@@ -2,15 +2,24 @@ from django.contrib.auth import views as auth_views
 from django.urls import path
 
 from . import views
+from . import views_pedidos
 from . import views_stock
 
 
 urlpatterns = [
+    # =====================================================
+    # TIENDA Y CATÁLOGO
+    # =====================================================
+
     path(
         "",
         views.catalogo,
         name="catalogo",
     ),
+
+    # =====================================================
+    # CARRITO
+    # =====================================================
 
     path(
         "carrito/",
@@ -36,6 +45,10 @@ urlpatterns = [
         name="eliminar_carrito",
     ),
 
+    # =====================================================
+    # PEDIDOS DEL CLIENTE
+    # =====================================================
+
     path(
         "pedido/crear/",
         views.crear_pedido,
@@ -47,6 +60,10 @@ urlpatterns = [
         views.pedido_exito,
         name="pedido_exito",
     ),
+
+    # =====================================================
+    # AUTENTICACIÓN
+    # =====================================================
 
     path(
         "login/",
@@ -72,11 +89,19 @@ urlpatterns = [
         name="logout",
     ),
 
+    # =====================================================
+    # PANEL ADMINISTRATIVO
+    # =====================================================
+
     path(
         "panel/",
         views.dashboard,
         name="dashboard",
     ),
+
+    # =====================================================
+    # PRODUCTOS
+    # =====================================================
 
     path(
         "panel/productos/nuevo/",
@@ -102,6 +127,10 @@ urlpatterns = [
         name="exportar_productos_csv",
     ),
 
+    # =====================================================
+    # GESTIÓN DE PEDIDOS
+    # =====================================================
+
     path(
         "panel/pedidos/",
         views.pedidos_panel,
@@ -114,15 +143,16 @@ urlpatterns = [
         name="cambiar_estado_pedido",
     ),
 
+    # Estas funciones están en views_pedidos.py
     path(
         "panel/pedidos/<int:pedido_id>/eliminar/",
-        views.eliminar_pedido_cancelado,
+        views_pedidos.eliminar_pedido_cancelado,
         name="eliminar_pedido_cancelado",
     ),
 
     path(
         "panel/pedidos/eliminar-cancelados/",
-        views.eliminar_todos_cancelados,
+        views_pedidos.eliminar_todos_cancelados,
         name="eliminar_todos_cancelados",
     ),
 ]
