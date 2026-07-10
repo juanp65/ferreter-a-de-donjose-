@@ -1,0 +1,77 @@
+{% extends 'base.html' %}
+{% block title %}Mi cuenta | Ferretería Don José{% endblock %}
+{% block body_class %}customer-body{% endblock %}
+{% block content %}
+<header class="mobile-header store-header customer-topbar">
+    <a class="icon-button" href="{% url 'catalogo' %}" aria-label="Volver al catálogo">←</a>
+    <a class="customer-brand" href="{% url 'catalogo' %}"><span>🏪</span> Ferretería Don José</a>
+    <a class="icon-button cart-link" href="{% url 'carrito' %}" aria-label="Carrito">🛒<b>{{ carrito_cantidad }}</b></a>
+</header>
+
+<main class="customer-shell storefront-shell account-page styled-account-page">
+    <section class="account-header styled-account-header">
+        <div class="account-avatar">{{ user.first_name|first|upper|default:'U' }}</div>
+        <div>
+            <p class="eyebrow">Mi cuenta</p>
+            <h1>Hola, {{ user.first_name|default:user.username }}</h1>
+            <p class="muted">{{ user.email|default:user.username }}</p>
+        </div>
+        <form method="post" action="{% url 'logout' %}">
+            {% csrf_token %}
+            <button class="btn btn-light">Cerrar sesión</button>
+        </form>
+    </section>
+
+    <section class="account-summary styled-account-summary">
+        <article><span>📦</span><div><strong>{{ pedidos|length }}</strong><small>Pedidos realizados</small></div></article>
+        <article><span>🛍️</span><div><strong>Retiro en tienda</strong><small>Presenta tu código al retirar</small></div></article>
+        <a class="btn btn-primary" href="{% url 'catalogo' %}">Seguir comprando</a>
+    </section>
+
+    <div class="section-heading account-orders-heading">
+        <div><p class="eyebrow">Historial</p><h2>Mis pedidos</h2></div>
+    </div>
+
+    {% if pedidos %}
+    <section class="customer-order-grid">
+        {% for pedido in pedidos %}
+        <article class="customer-order-card">
+            <div class="customer-order-head">
+                <div>
+                    <small>{{ pedido.creado_en|date:'d/m/Y H:i' }}</small>
+                    <h3>{{ pedido.codigo_retiro }}</h3>
+                </div>
+                <span class="pill {{ pedido.estado }}">{{ pedido.get_estado_display }}</span>
+            </div>
+            <div class="customer-order-details">
+                <span><small>Total</small><strong>${{ pedido.total|floatformat:0 }}</strong></span>
+                <span><small>Pago</small><strong>{{ pedido.get_metodo_pago_display }}</strong></span>
+                <span><small>Estado del pago</small><strong>{{ pedido.get_estado_pago_display }}</strong></span>
+                <span><small>Documento</small><strong>{{ pedido.get_tipo_documento_display }}</strong></span>
+            </div>
+            <div class="customer-order-items">
+                {% for item in pedido.items.all %}
+                    <span>{{ item.cantidad }} × {{ item.producto.nombre }}</span>
+                {% endfor %}
+            </div>
+            <a class="btn btn-outline btn-block" href="{% url 'pedido_exito' pedido.id %}">Ver código y comprobante</a>
+        </article>
+        {% endfor %}
+    </section>
+    {% else %}
+    <section class="empty-state large">
+        <span>📦</span>
+        <h2>Aún no tienes pedidos</h2>
+        <p>Cuando realices una compra, aquí podrás revisar su estado y código de retiro.</p>
+        <a class="btn btn-primary" href="{% url 'catalogo' %}">Ir al catálogo</a>
+    </section>
+    {% endif %}
+</main>
+
+<nav class="bottom-nav">
+    <a href="{% url 'catalogo' %}"><span>⌂</span>Inicio</a>
+    <a href="{% url 'catalogo' %}#categorias"><span>▦</span>Categorías</a>
+    <a href="{% url 'carrito' %}"><span>🛒</span>Carrito</a>
+    <a class="active" href="{% url 'cuenta' %}"><span>♙</span>Mi cuenta</a>
+</nav>
+{% endblock %}

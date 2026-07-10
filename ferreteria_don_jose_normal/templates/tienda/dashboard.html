@@ -1,0 +1,83 @@
+{% extends 'base.html' %}
+{% block title %}Panel Don José{% endblock %}
+{% block body_class %}admin-body{% endblock %}
+{% block content %}
+<div class="admin-layout styled-admin-layout">
+    <aside class="sidebar styled-sidebar">
+        <a class="sidebar-brand" href="{% url 'dashboard' %}"><span>🏪</span><div>Ferretería<small>Don José</small></div></a>
+        <nav>
+            <a class="active" href="{% url 'dashboard' %}"><span>▦</span>Productos</a>
+            <a href="{% url 'pedidos_panel' %}"><span>▣</span>Pedidos {% if pedidos_pendientes %}<b>{{ pedidos_pendientes }}</b>{% endif %}</a>
+        </nav>
+        <a class="sidebar-client" href="{% url 'catalogo' %}" target="_blank">Ver vista cliente ↗</a>
+    </aside>
+
+    <main class="admin-main styled-admin-main">
+        <header class="admin-header">
+            <div>
+                <p class="eyebrow">Panel de gestión</p>
+                <h1>Ferretería Don José</h1>
+            </div>
+            <div class="user-menu">Hola, {{ request.user.first_name|default:request.user.username }} <span>●</span>
+                <form method="post" action="{% url 'logout' %}">{% csrf_token %}<button>Salir</button></form>
+            </div>
+        </header>
+
+        <section class="metric-grid styled-metric-grid">
+            <article class="metric-card"><span class="metric-icon">📦</span><div><small>Productos</small><strong>{{ total_productos }}</strong><p>Total en catálogo</p></div></article>
+            <article class="metric-card"><span class="metric-icon">💲</span><div><small>Ventas hoy</small><strong>${{ ventas_hoy|floatformat:0 }}</strong><p>{{ cantidad_ventas_hoy }} ventas</p></div></article>
+            <article class="metric-card"><span class="metric-icon">🧾</span><div><small>Pedidos</small><strong>{{ pedidos_pendientes }}</strong><p>Pendientes</p></div></article>
+            <article class="metric-card"><span class="metric-icon">⚠</span><div><small>Stock bajo</small><strong>{{ stock_bajo }}</strong><p>Productos</p></div></article>
+        </section>
+
+        <section class="panel-card inventory-card styled-inventory-card" id="inventario">
+            <div class="panel-toolbar">
+                <div><p class="eyebrow">Inventario</p><h2>Productos y stock</h2></div>
+                <div class="toolbar-actions">
+                    <a class="btn btn-light" href="{% url 'exportar_productos_csv' %}">Exportar ↓</a>
+                    <a class="btn btn-primary" href="{% url 'producto_crear' %}">＋ Agregar producto</a>
+                </div>
+            </div>
+
+            <form method="get" class="admin-filters">
+                <input type="search" name="q" value="{{ q }}" placeholder="Buscar producto o categoría...">
+                <select name="categoria">
+                    <option value="">Todas las categorías</option>
+                    {% for categoria in categorias %}<option value="{{ categoria.slug }}" {% if categoria_seleccionada == categoria.slug %}selected{% endif %}>{{ categoria.nombre }}</option>{% endfor %}
+                </select>
+                <button class="btn btn-light">Filtrar</button>
+            </form>
+
+            <div class="table-wrap">
+                <table class="data-table">
+                    <thead><tr><th>Producto</th><th>Categoría</th><th>Stock</th><th>Precio</th><th>Estado</th><th>Última actualización</th><th></th></tr></thead>
+                    <tbody>
+                    {% for producto in productos %}
+                        <tr>
+                            <td>
+                                <div class="table-product-cell">
+                                    {% if producto.imagen %}
+                                        <img class="table-product-photo" src="{{ producto.imagen.url }}" alt="{{ producto.nombre }}">
+                                    {% else %}
+                                        <span class="table-product-photo table-product-photo-empty">Sin foto</span>
+                                    {% endif %}
+                                    <strong>{{ producto.nombre }}</strong>
+                                </div>
+                            </td>
+                            <td>{{ producto.categoria.nombre }}</td>
+                            <td>{{ producto.stock }}</td>
+                            <td>${{ producto.precio|floatformat:0 }}</td>
+                            <td>{% if producto.disponible %}<span class="pill success">Disponible</span>{% else %}<span class="pill danger">Sin stock</span>{% endif %}</td>
+                            <td>{{ producto.actualizado_en|date:'d/m/Y H:i' }}</td>
+                            <td><a class="table-link" href="{% url 'producto_editar' producto.id %}">Editar</a></td>
+                        </tr>
+                    {% empty %}<tr><td colspan="7" class="empty-row">No hay productos para mostrar.</td></tr>{% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+
+    </main>
+</div>
+{% endblock %}

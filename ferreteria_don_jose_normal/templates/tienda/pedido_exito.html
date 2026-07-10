@@ -1,0 +1,68 @@
+{% extends 'base.html' %}
+{% block title %}Pedido registrado{% endblock %}
+{% block body_class %}customer-body{% endblock %}
+{% block content %}
+<header class="mobile-header store-header">
+    <a class="icon-button" href="{% url 'catalogo' %}" aria-label="Volver a la tienda">←</a>
+    <a class="customer-brand" href="{% url 'catalogo' %}"><span>🏪</span><strong>Ferretería Don José</strong></a>
+    <a class="icon-button cart-link" href="{% url 'carrito' %}" aria-label="Carrito">🛒<b>{{ carrito_cantidad }}</b></a>
+</header>
+<main class="success-page order-success-page styled-success-page">
+    <section class="success-card order-success-card styled-success-card">
+        <div class="success-icon">✓</div>
+        <p class="eyebrow">Pedido registrado</p>
+        <h1>¡Listo, {{ pedido.cliente_nombre }}!</h1>
+
+        {% if pedido.estado_pago == 'pagado' %}
+            <p>El pago con tarjeta fue aprobado en el modo demostración y los productos quedaron reservados.</p>
+        {% else %}
+            <p>Tu pedido quedó registrado. El pago se realizará cuando retires los productos en la tienda.</p>
+        {% endif %}
+
+        <section class="pickup-code-card">
+            <span class="pickup-code-label">Código para retirar</span>
+            <strong id="pickup-code">{{ pedido.codigo_retiro }}</strong>
+            <button type="button" class="copy-code-button" data-copy-code="{{ pedido.codigo_retiro }}">Copiar código</button>
+            <small>Presenta este código junto con tu nombre al momento del retiro.</small>
+        </section>
+
+        <div class="order-status-grid">
+            <div><span>Pedido</span><strong>{{ pedido.get_estado_display }}</strong></div>
+            <div><span>Pago</span><strong>{{ pedido.get_estado_pago_display }}</strong></div>
+            <div><span>Método</span><strong>{{ pedido.get_metodo_pago_display }}</strong></div>
+            <div><span>Documento</span><strong>{{ pedido.get_tipo_documento_display }}</strong></div>
+            {% if pedido.tarjeta_ultimos4 %}<div><span>Tarjeta</span><strong>•••• {{ pedido.tarjeta_ultimos4 }}</strong></div>{% endif %}
+        </div>
+
+        {% if pedido.tipo_documento == 'factura' %}
+        <section class="invoice-receipt-data">
+            <h2>Datos de facturación</h2>
+            <div><span>RUT</span><strong>{{ pedido.factura_rut }}</strong></div>
+            <div><span>Razón social</span><strong>{{ pedido.factura_razon_social }}</strong></div>
+            <div><span>Giro</span><strong>{{ pedido.factura_giro }}</strong></div>
+            <div><span>Dirección</span><strong>{{ pedido.factura_direccion }}</strong></div>
+            <div><span>Correo</span><strong>{{ pedido.factura_email }}</strong></div>
+        </section>
+        {% endif %}
+
+        <div class="order-summary">
+            {% for item in pedido.items.all %}
+                <div><span>{{ item.cantidad }} × {{ item.producto.nombre }}</span><strong>${{ item.subtotal|floatformat:0 }}</strong></div>
+            {% endfor %}
+            <div><span>Neto</span><strong>${{ pedido.monto_neto|floatformat:0 }}</strong></div>
+            <div><span>IVA (19%)</span><strong>${{ pedido.monto_iva|floatformat:0 }}</strong></div>
+            <div class="total-row"><span>Total con IVA</span><strong>${{ pedido.total|floatformat:0 }}</strong></div>
+        </div>
+        <p class="tax-document-note">Este comprobante registra la solicitud de {{ pedido.get_tipo_documento_display|lower }}. La emisión tributaria electrónica requiere integración con el SII.</p>
+        <a class="btn btn-whatsapp btn-block" href="{{ whatsapp_url }}" target="_blank" rel="noopener">Avisar por WhatsApp</a>
+        <button class="btn btn-light btn-block" type="button" onclick="window.print()">Imprimir comprobante</button>
+        {% if user.is_authenticated %}
+        <a class="btn btn-outline btn-block" href="{% url 'cuenta' %}">Ver mis pedidos</a>
+        {% else %}
+        <p class="guest-receipt-note">Guarda o imprime este comprobante. También puedes enviar el código por WhatsApp.</p>
+        <a class="btn btn-outline btn-block" href="{% url 'registro' %}">Crear una cuenta opcional</a>
+        {% endif %}
+        <a class="btn btn-light btn-block" href="{% url 'catalogo' %}">Volver al catálogo</a>
+    </section>
+</main>
+{% endblock %}

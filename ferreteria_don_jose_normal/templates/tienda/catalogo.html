@@ -1,0 +1,117 @@
+{% extends 'base.html' %}
+{% block title %}Catálogo | Ferretería Don José{% endblock %}
+{% block body_class %}customer-body{% endblock %}
+{% block content %}
+<header class="mobile-header store-header">
+    {% if user.is_authenticated %}
+    <a class="icon-button account-icon-link" href="{% url 'cuenta' %}" aria-label="Mi cuenta">👤</a>
+    {% else %}
+    <a class="icon-button account-icon-link" href="{% url 'login' %}" aria-label="Iniciar sesión">👤</a>
+    {% endif %}
+    <a class="customer-brand" href="{% url 'catalogo' %}"><span>🏪</span><strong>Ferretería Don José</strong></a>
+    <a class="icon-button cart-link" href="{% url 'carrito' %}" aria-label="Carrito">🛒<b>{{ carrito_cantidad }}</b></a>
+</header>
+
+<main class="customer-shell storefront-shell">
+    <section class="customer-hero storefront-hero">
+        <p class="eyebrow">Compra fácil y rápida</p>
+        <h1>Lo que necesitas para tu proyecto</h1>
+        <form method="get" class="search-box storefront-search">
+            <span>⌕</span>
+            <input type="search" name="q" value="{{ q }}" placeholder="Buscar productos...">
+            {% if categoria_seleccionada %}<input type="hidden" name="categoria" value="{{ categoria_seleccionada }}">{% endif %}
+            <button>Buscar</button>
+        </form>
+    </section>
+
+    <section class="catalog-layout storefront-layout">
+        <aside class="category-sidebar">
+            <div class="sidebar-card storefront-sidebar-card">
+                <h3>Categorías</h3>
+                <div class="category-list">
+                    <a class="category-link {% if not categoria_seleccionada %}active{% endif %}" href="{% url 'catalogo' %}{% if q %}?q={{ q }}{% endif %}">
+                        <span>Todos</span>
+                        <small>{{ categorias|length }}</small>
+                    </a>
+                    {% for categoria in categorias %}
+                        <a class="category-link {% if categoria_seleccionada == categoria.slug %}active{% endif %}" href="?categoria={{ categoria.slug }}{% if q %}&q={{ q }}{% endif %}">
+                            <span>{{ categoria.nombre }}</span>
+                            <small>Ver</small>
+                        </a>
+                    {% endfor %}
+                </div>
+            </div>
+        </aside>
+
+        <div class="catalog-content storefront-content">
+            <nav class="category-strip" aria-label="Categorías" id="categorias">
+                <a class="chip {% if not categoria_seleccionada %}active{% endif %}" href="{% url 'catalogo' %}{% if q %}?q={{ q }}{% endif %}">Todos</a>
+                {% for categoria in categorias %}
+                    <a class="chip {% if categoria_seleccionada == categoria.slug %}active{% endif %}" href="?categoria={{ categoria.slug }}{% if q %}&q={{ q }}{% endif %}">{{ categoria.nombre }}</a>
+                {% endfor %}
+            </nav>
+
+            <div class="section-heading storefront-heading">
+                <div>
+                    <p class="eyebrow">Catálogo</p>
+                    <h2>Productos</h2>
+                </div>
+                <span>{{ productos|length }} resultados</span>
+            </div>
+
+            <section class="product-grid storefront-grid">
+                {% for producto in productos %}
+                <article class="product-card storefront-card">
+                    <div class="product-visual storefront-visual">
+                        {% if producto.imagen %}
+                            <img src="{{ producto.imagen.url }}" alt="{{ producto.nombre }}">
+                        {% else %}
+                            <span class="product-photo-placeholder">Sin foto</span>
+                        {% endif %}
+                    </div>
+                    <div class="product-info storefront-info">
+                        <small>{{ producto.categoria.nombre }}</small>
+                        <h3>{{ producto.nombre }}</h3>
+                        <strong>${{ producto.precio|floatformat:0 }}</strong>
+                        {% if producto.disponible %}
+                            <span class="status success">✓ Disponible - {{ producto.stock }} un.</span>
+                        {% else %}
+                            <span class="status danger">✕ Sin stock</span>
+                        {% endif %}
+                    </div>
+                    <form method="post" action="{% url 'agregar_carrito' producto.id %}" class="storefront-add-form">
+                        {% csrf_token %}
+                        <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                        <button class="add-button storefront-add" {% if not producto.disponible %}disabled{% endif %} aria-label="Agregar {{ producto.nombre }}">{% if producto.disponible %}+{% else %}×{% endif %}</button>
+                    </form>
+                </article>
+                {% empty %}
+                <div class="empty-state">
+                    <span>🔎</span>
+                    <h3>No encontramos productos</h3>
+                    <p>Prueba con otra palabra o selecciona una categoría distinta.</p>
+                </div>
+                {% endfor %}
+            </section>
+        </div>
+    </section>
+
+    <section class="customer-actions storefront-actions">
+        <a class="btn btn-whatsapp" href="{{ whatsapp_url }}" target="_blank" rel="noopener">🟢 Consultar por WhatsApp</a>
+        <a class="btn btn-outline store-buy-btn" href="{% url 'carrito' %}">🛒 Reservar / Comprar <span>{{ carrito_cantidad }}</span></a>
+    </section>
+
+    <div class="storefront-sparkle" aria-hidden="true">✧</div>
+</main>
+
+<nav class="bottom-nav">
+    <a class="active" href="{% url 'catalogo' %}"><span>⌂</span>Inicio</a>
+    <a href="#categorias"><span>▦</span>Categorías</a>
+    <a href="{% url 'carrito' %}"><span>🛒</span>Carrito</a>
+    {% if user.is_authenticated %}
+    <a href="{% url 'cuenta' %}"><span>👤</span>Mi cuenta</a>
+    {% else %}
+    <a href="{% url 'login' %}"><span>🔐</span>Ingresar</a>
+    {% endif %}
+</nav>
+{% endblock %}

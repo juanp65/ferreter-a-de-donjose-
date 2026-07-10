@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+{% block title %}Crear cuenta | Ferretería Don José{% endblock %}
+{% block body_class %}login-body{% endblock %}
+{% block content %}
+<main class="auth-shell styled-auth-shell">
+    <section class="auth-visual styled-auth-visual" aria-hidden="true">
+        <div class="auth-visual-content">
+            <div class="auth-store-icon">🧰</div>
+            <p class="eyebrow auth-eyebrow">Cuenta de cliente</p>
+            <h1>Compra con mayor rapidez y guarda todos tus pedidos.</h1>
+            <p>Tu cuenta permite asociar cada compra a tu perfil y consultar posteriormente el código de retiro.</p>
+            <div class="auth-benefits">
+                <span>✓ Registro gratuito</span>
+                <span>✓ Pedido asociado a tu cuenta</span>
+                <span>✓ Historial disponible siempre</span>
+            </div>
+        </div>
+    </section>
+
+    <section class="auth-panel styled-auth-panel">
+        <div class="auth-card styled-auth-card">
+            <a class="auth-back" href="{% url 'catalogo' %}">← Volver al catálogo</a>
+            <div class="brand-mark">👤</div>
+            <p class="eyebrow">Nuevo cliente</p>
+            <h2>Crear una cuenta</h2>
+            <p class="muted">Completa estos datos para continuar con tus compras.</p>
+
+            <form method="post" class="stack-form auth-form" novalidate>
+                {% csrf_token %}
+                {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
+                {{ form.non_field_errors }}
+                <label>{{ form.first_name.label }} {{ form.first_name }} {{ form.first_name.errors }}</label>
+                <label>{{ form.email.label }} {{ form.email }} {{ form.email.errors }}</label>
+                <label>{{ form.password1.label }} {{ form.password1 }} {{ form.password1.errors }}</label>
+                <label>{{ form.password2.label }} {{ form.password2 }} {{ form.password2.errors }}</label>
+                <button class="btn btn-primary btn-block">Crear cuenta</button>
+            </form>
+
+            <div class="auth-divider"><span>¿Ya tienes cuenta?</span></div>
+            <a class="btn btn-outline btn-block" href="{% url 'login' %}{% if next %}?next={{ next|urlencode }}{% endif %}">Iniciar sesión</a>
+        </div>
+    </section>
+</main>
+{% endblock %}

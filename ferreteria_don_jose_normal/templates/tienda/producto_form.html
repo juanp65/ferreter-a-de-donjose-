@@ -1,0 +1,133 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}{{ titulo }}{% endblock %}
+{% block body_class %}admin-body{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'css/product_form.css' %}?v=20260702-2">{% endblock %}
+{% block content %}
+<header class="admin-simple-header">
+    <a class="admin-simple-brand" href="{% url 'dashboard' %}"><span>🏪</span><strong>Ferretería Don José</strong></a>
+    <a class="admin-simple-action" href="{% url 'dashboard' %}">Volver al inventario</a>
+</header>
+<main class="product-form-page">
+    <section class="product-editor-card">
+        <header class="product-editor-header">
+            <div class="product-editor-icon">📦</div>
+            <div>
+                <p class="eyebrow">Inventario</p>
+                <h1>{% if producto %}Editar producto{% else %}Nuevo producto{% endif %}</h1>
+                <p>
+                    {% if producto %}
+                        Cambia solamente los datos que necesites y guarda.
+                    {% else %}
+                        Completa los cuatro datos principales para agregarlo al catálogo.
+                    {% endif %}
+                </p>
+            </div>
+        </header>
+
+        <form method="post" enctype="multipart/form-data" class="product-simple-form" novalidate>
+            {% csrf_token %}
+
+            {% if form.non_field_errors %}
+                <div class="form-alert">{{ form.non_field_errors }}</div>
+            {% endif %}
+
+            <section class="product-main-fields" aria-labelledby="datos-principales">
+                <h2 id="datos-principales">Datos principales</h2>
+
+                <div class="simple-field field-name">
+                    <label for="{{ form.nombre.id_for_label }}">{{ form.nombre.label }}</label>
+                    {{ form.nombre }}
+                    {% for error in form.nombre.errors %}<small class="field-error">{{ error }}</small>{% endfor %}
+                </div>
+
+                <div class="simple-field field-category">
+                    <label for="{{ form.categoria.id_for_label }}">{{ form.categoria.label }}</label>
+                    {{ form.categoria }}
+                    {% for error in form.categoria.errors %}<small class="field-error">{{ error }}</small>{% endfor %}
+                </div>
+
+                <div class="simple-field field-price">
+                    <label for="{{ form.precio.id_for_label }}">{{ form.precio.label }}</label>
+                    <div class="input-with-prefix">
+                        <span>$</span>
+                        {{ form.precio }}
+                    </div>
+                    {% for error in form.precio.errors %}<small class="field-error">{{ error }}</small>{% endfor %}
+                </div>
+
+                <div class="simple-field field-stock">
+                    <label for="{{ form.stock.id_for_label }}">{{ form.stock.label }}</label>
+                    {{ form.stock }}
+                    {% for error in form.stock.errors %}<small class="field-error">{{ error }}</small>{% endfor %}
+                </div>
+            </section>
+
+            <details class="product-extra-options"
+                {% if form.descripcion.errors or form.imagen.errors or form.activo.errors or form.eliminar_imagen.errors %}open{% endif %}>
+                <summary>
+                    <span>
+                        <strong>Opciones adicionales</strong>
+                        <small>Descripción, fotografía y visibilidad</small>
+                    </span>
+                    <span class="details-arrow">⌄</span>
+                </summary>
+
+                <div class="product-extra-grid">
+                    <div class="simple-field extra-description">
+                        <label for="{{ form.descripcion.id_for_label }}">{{ form.descripcion.label }} <small>Opcional</small></label>
+                        {{ form.descripcion }}
+                        <span class="field-help">{{ form.descripcion.help_text }}</span>
+                        {% for error in form.descripcion.errors %}<small class="field-error">{{ error }}</small>{% endfor %}
+                    </div>
+
+                    <div class="simple-field extra-image">
+                        <label>{{ form.imagen.label }} <small>Opcional</small></label>
+
+                        {% if producto and producto.imagen %}
+                            <div class="current-product-image">
+                                <img src="{{ producto.imagen.url }}" alt="Imagen actual de {{ producto.nombre }}">
+                                <div>
+                                    <strong>Imagen actual</strong>
+                                    <label class="remove-image-option" for="{{ form.eliminar_imagen.id_for_label }}">
+                                        {{ form.eliminar_imagen }}
+                                        <span>Quitar esta imagen</span>
+                                    </label>
+                                </div>
+                            </div>
+                        {% endif %}
+
+                        <div class="custom-file-row">
+                            <label class="custom-file-button" for="{{ form.imagen.id_for_label }}">Elegir fotografía</label>
+                            <span data-product-file-name>
+                                {% if producto and producto.imagen %}Selecciona otra para reemplazarla{% else %}No se ha seleccionado una imagen{% endif %}
+                            </span>
+                            {{ form.imagen }}
+                        </div>
+                        <span class="field-help">{{ form.imagen.help_text }}</span>
+                        {% for error in form.imagen.errors %}<small class="field-error">{{ error }}</small>{% endfor %}
+                        {% for error in form.eliminar_imagen.errors %}<small class="field-error">{{ error }}</small>{% endfor %}
+                    </div>
+
+                    <label class="product-visibility-toggle" for="{{ form.activo.id_for_label }}">
+                        {{ form.activo }}
+                        <span class="toggle-control" aria-hidden="true"></span>
+                        <span>
+                            <strong>Mostrar en la tienda</strong>
+                            <small>Desactívalo para ocultarlo sin eliminarlo.</small>
+                        </span>
+                    </label>
+                    {% for error in form.activo.errors %}<small class="field-error">{{ error }}</small>{% endfor %}
+                </div>
+            </details>
+
+            <footer class="product-form-actions">
+                <a class="btn btn-light" href="{% url 'dashboard' %}">Cancelar</a>
+                <button class="btn btn-primary" type="submit">
+                    {% if producto %}Guardar cambios{% else %}Agregar producto{% endif %}
+                </button>
+            </footer>
+        </form>
+    </section>
+</main>
+{% endblock %}

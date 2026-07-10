@@ -1,0 +1,129 @@
+{% extends 'base.html' %}
+{% block title %}Pedidos | Don José{% endblock %}
+{% block body_class %}admin-body{% endblock %}
+{% block content %}
+<header class="admin-simple-header">
+    <a class="admin-simple-brand" href="{% url 'dashboard' %}"><span>🏪</span><strong>Ferretería Don José</strong></a>
+    <a class="admin-simple-action" href="{% url 'dashboard' %}">Volver al panel</a>
+</header>
+
+<main class="orders-page styled-orders-page">
+    <div class="orders-header orders-header-integrated">
+        <div>
+            <p class="eyebrow">Gestión</p>
+            <h1>Pedidos</h1>
+            <p class="orders-description">Aquí también aparecen los mensajes u observaciones enviados por los clientes al realizar su pedido.</p>
+        </div>
+
+        <form method="get" class="orders-filters">
+            <label>
+                <span>Estado</span>
+                <select name="estado" onchange="this.form.submit()">
+                    <option value="">Todos los estados</option>
+                    {% for valor, nombre in estados_pedido %}
+                        <option value="{{ valor }}" {% if estado == valor %}selected{% endif %}>{{ nombre }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+
+            <label>
+                <span>Mensajes</span>
+                <select name="con_mensaje" onchange="this.form.submit()">
+                    <option value="">Todos los pedidos</option>
+                    <option value="si" {% if con_mensaje == 'si' %}selected{% endif %}>Con mensaje</option>
+                    <option value="no" {% if con_mensaje == 'no' %}selected{% endif %}>Sin mensaje</option>
+                </select>
+            </label>
+        </form>
+    </div>
+
+    <div class="orders-summary-bar">
+        <span><strong>{{ pedidos|length }}</strong> pedidos mostrados</span>
+        <span><strong>{{ mensajes_count }}</strong> con mensaje del cliente</span>
+    </div>
+
+    {% if whatsapp_listo_url %}
+    <section class="whatsapp-ready-banner" data-whatsapp-ready>
+        <div>
+            <strong>Pedido {{ whatsapp_listo_codigo }} listo para retirar</strong>
+            <p>Presiona el botón para abrir WhatsApp con el mensaje preparado.</p>
+        </div>
+        <a class="btn btn-whatsapp" href="{{ whatsapp_listo_url }}" target="_blank" rel="noopener">Abrir WhatsApp</a>
+    </section>
+    {% endif %}
+
+    <section class="orders-grid">
+        {% for pedido in pedidos %}
+        <article class="order-card styled-order-card">
+            <div class="order-card-head">
+                <div>
+                    <small>{{ pedido.codigo_retiro }}</small>
+                    <h2>{{ pedido.cliente_nombre }}</h2>
+                    <p>{{ pedido.cliente_telefono }}</p>
+                </div>
+                <span class="pill {{ pedido.estado }}">{{ pedido.get_estado_display }}</span>
+            </div>
+
+            <div class="order-payment-info">
+                <span>💳 {{ pedido.get_metodo_pago_display }}</span>
+                <span class="pill {% if pedido.estado_pago == 'pagado' %}success{% else %}pendiente{% endif %}">{{ pedido.get_estado_pago_display }}</span>
+                <span>🧾 {{ pedido.get_tipo_documento_display }}</span>
+                {% if pedido.tarjeta_ultimos4 %}<span>•••• {{ pedido.tarjeta_ultimos4 }}</span>{% endif %}
+            </div>
+
+            {% if pedido.tipo_documento == 'factura' %}
+            <section class="admin-invoice-data">
+                <div class="customer-message-title"><span>📄</span><strong>Datos para factura</strong></div>
+                <div class="admin-invoice-grid">
+                    <span><small>RUT</small><strong>{{ pedido.factura_rut }}</strong></span>
+                    <span><small>Razón social</small><strong>{{ pedido.factura_razon_social }}</strong></span>
+                    <span><small>Giro</small><strong>{{ pedido.factura_giro }}</strong></span>
+                    <span><small>Dirección</small><strong>{{ pedido.factura_direccion }}</strong></span>
+                    <span><small>Correo</small><strong>{{ pedido.factura_email }}</strong></span>
+                </div>
+            </section>
+            {% endif %}
+
+            <div class="order-items">
+                {% for item in pedido.items.all %}
+                    <div><span>{{ item.cantidad }} × {{ item.producto.nombre }}</span><strong>${{ item.subtotal|floatformat:0 }}</strong></div>
+                {% endfor %}
+            </div>
+
+            {% if pedido.observacion %}
+                <section class="customer-message-box">
+                    <div class="customer-message-title"><span>✉</span><strong>Mensaje del cliente</strong></div>
+                    <p>{{ pedido.observacion }}</p>
+                </section>
+            {% endif %}
+
+            <section class="order-tax-summary">
+                <div><span>Neto</span><strong>${{ pedido.monto_neto|floatformat:0 }}</strong></div>
+                <div><span>IVA (19%)</span><strong>${{ pedido.monto_iva|floatformat:0 }}</strong></div>
+                <div class="total-row">
+                    <span>{{ pedido.creado_en|date:'d/m/Y H:i' }}</span>
+                    <strong>${{ pedido.total|floatformat:0 }}</strong>
+                </div>
+            </section>
+
+            <form method="post" action="{% url 'cambiar_estado_pedido' pedido.id %}" class="order-actions">
+                {% csrf_token %}
+                <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                <select name="estado" aria-label="Cambiar estado del pedido {{ pedido.codigo_retiro }}">
+                    {% for valor, nombre in estados_pedido %}
+                        <option value="{{ valor }}" {% if pedido.estado == valor %}selected{% endif %}>{{ nombre }}</option>
+                    {% endfor %}
+                </select>
+                <button class="btn btn-primary">Actualizar</button>
+            </form>
+        </article>
+        {% empty %}
+            <div class="empty-state large">
+                <span>🧾</span>
+                <h2>No hay pedidos</h2>
+                <p>No existen pedidos con los filtros seleccionados.</p>
+            </div>
+        {% endfor %}
+    </section>
+</main>
+{% endblock %}

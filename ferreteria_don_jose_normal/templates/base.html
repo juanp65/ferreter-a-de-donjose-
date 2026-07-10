@@ -1,0 +1,22 @@
+{% load static %}
+<!doctype html>
+<html lang="es">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}Ferretería Don José{% endblock %}</title>
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}?v=20260710-iva-1">
+    {% block extra_css %}{% endblock %}
+</head>
+<body class="{% block body_class %}{% endblock %}">
+    {% if messages %}
+        <div class="toast-stack">
+            {% for message in messages %}
+                <div class="toast toast-{{ message.tags|default:'info' }}">{{ message }}</div>
+            {% endfor %}
+        </div>
+    {% endif %}
+    {% block content %}{% endblock %}
+    <script src="{% static 'js/app.js' %}?v=20260710-iva-1"></script>
+</body>
+</html>
