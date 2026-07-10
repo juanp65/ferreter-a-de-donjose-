@@ -1,0 +1,348 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}
+Importar stock desde foto | Don José
+{% endblock %}
+
+{% block body_class %}
+admin-body
+{% endblock %}
+
+{% block extra_css %}
+<link
+    rel="stylesheet"
+    href="{% static 'css/importar_stock.css' %}?v=20260710-1"
+>
+{% endblock %}
+
+{% block content %}
+
+<header class="admin-simple-header">
+
+    <a
+        class="admin-simple-brand"
+        href="{% url 'dashboard' %}"
+    >
+        <span>🏪</span>
+        <strong>Ferretería Don José</strong>
+    </a>
+
+    <a
+        class="admin-simple-action"
+        href="{% url 'dashboard' %}"
+    >
+        Volver al inventario
+    </a>
+
+</header>
+
+
+<main class="stock-import-page">
+
+    <section class="stock-import-card">
+
+        <header class="stock-import-header">
+
+            <div>
+
+                <p class="eyebrow">
+                    Inventario
+                </p>
+
+                <h1>
+                    Importar stock desde una foto
+                </h1>
+
+                <p>
+                    Sube una foto clara de la hoja.
+                    El sistema leerá el texto y te
+                    mostrará una tabla para revisar
+                    antes de guardar.
+                </p>
+
+            </div>
+
+            <span class="stock-import-badge">
+                OCR gratuito
+            </span>
+
+        </header>
+
+
+        <section class="stock-format-guide">
+
+            <strong>
+                Formato recomendado:
+                una fila por producto
+            </strong>
+
+            <code>
+                Cemento 50 kg | 30 | 7500
+            </code>
+
+            <code>
+                Martillo carpintero | 10 | 12990
+            </code>
+
+            <small>
+                Orden: nombre del producto | stock | precio.
+                El precio es obligatorio solamente para
+                productos nuevos.
+            </small>
+
+        </section>
+
+
+        <section class="stock-upload-grid">
+
+            <div class="stock-upload-box">
+
+                <label
+                    for="stock-photo"
+                    class="stock-photo-label"
+                >
+                    Fotografía del inventario
+                </label>
+
+                <input
+                    type="file"
+                    id="stock-photo"
+                    accept="image/png,image/jpeg,image/webp"
+                    capture="environment"
+                >
+
+                <button
+                    type="button"
+                    class="btn btn-primary"
+                    id="read-stock-photo"
+                >
+                    Leer fotografía
+                </button>
+
+                <p class="stock-ocr-note">
+                    La primera lectura puede tardar unos
+                    segundos porque el reconocimiento se
+                    ejecuta en tu navegador.
+                </p>
+
+
+                <div
+                    class="stock-progress"
+                    id="stock-progress"
+                    hidden
+                >
+
+                    <div class="stock-progress-bar">
+                        <span id="stock-progress-fill"></span>
+                    </div>
+
+                    <strong id="stock-progress-text">
+                        Preparando lectura…
+                    </strong>
+
+                </div>
+
+            </div>
+
+
+            <div class="stock-preview-box">
+
+                <img
+                    id="stock-photo-preview"
+                    alt="Vista previa de la hoja"
+                    hidden
+                >
+
+                <div id="stock-preview-empty">
+
+                    <span>
+                        📷
+                    </span>
+
+                    <p>
+                        La vista previa aparecerá aquí.
+                    </p>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <section class="stock-text-section">
+
+            <div class="stock-section-title">
+
+                <div>
+
+                    <h2>
+                        Texto detectado
+                    </h2>
+
+                    <p>
+                        Puedes corregirlo manualmente
+                        antes de crear la tabla.
+                    </p>
+
+                </div>
+
+                <button
+                    type="button"
+                    class="btn btn-light"
+                    id="process-stock-text"
+                >
+                    Procesar texto
+                </button>
+
+            </div>
+
+
+            <textarea
+                id="stock-raw-text"
+                rows="9"
+                placeholder="También puedes escribir o pegar aquí las filas manualmente."
+            ></textarea>
+
+        </section>
+
+
+        <form
+            method="post"
+            id="stock-import-form"
+            novalidate
+        >
+
+            {% csrf_token %}
+
+            <input
+                type="hidden"
+                name="filas_json"
+                id="stock-rows-json"
+            >
+
+
+            <section
+                class="stock-review-section"
+                id="stock-review-section"
+                hidden
+            >
+
+                <div class="stock-section-title">
+
+                    <div>
+
+                        <h2>
+                            Revisar antes de guardar
+                        </h2>
+
+                        <p>
+                            Los productos parecidos se marcan
+                            para actualizar. Los nombres nuevos
+                            se marcan para crear.
+                        </p>
+
+                    </div>
+
+                    <span
+                        class="stock-row-counter"
+                        id="stock-row-counter"
+                    >
+                        0 filas
+                    </span>
+
+                </div>
+
+
+                <div
+                    class="stock-review-alert"
+                    id="stock-review-alert"
+                    hidden
+                ></div>
+
+
+                <div class="stock-review-table-wrap">
+
+                    <table class="stock-review-table">
+
+                        <thead>
+
+                            <tr>
+
+                                <th>
+                                    Producto leído
+                                </th>
+
+                                <th>
+                                    Stock
+                                </th>
+
+                                <th>
+                                    Precio
+                                </th>
+
+                                <th>
+                                    Acción
+                                </th>
+
+                                <th>
+                                    Producto existente /
+                                    categoría
+                                </th>
+
+                                <th></th>
+
+                            </tr>
+
+                        </thead>
+
+                        <tbody id="stock-review-body"></tbody>
+
+                    </table>
+
+                </div>
+
+
+                <footer class="stock-import-actions">
+
+                    <a
+                        class="btn btn-light"
+                        href="{% url 'dashboard' %}"
+                    >
+                        Cancelar
+                    </a>
+
+                    <button
+                        type="submit"
+                        class="btn btn-primary"
+                        id="save-stock-import"
+                    >
+                        Guardar cambios de stock
+                    </button>
+
+                </footer>
+
+            </section>
+
+        </form>
+
+    </section>
+
+</main>
+
+
+{{ productos_json|json_script:"stock-products-data" }}
+
+{{ categorias_json|json_script:"stock-categories-data" }}
+
+
+<script
+    src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"
+></script>
+
+<script
+    src="{% static 'js/importar_stock.js' %}?v=20260710-1"
+></script>
+
+{% endblock %}
