@@ -1,11 +1,9 @@
 {% load static %}
 
 <!doctype html>
-
 <html lang="es">
 
 <head>
-
     <meta charset="utf-8">
 
     <meta
@@ -24,72 +22,41 @@
         {% endblock %}
     </title>
 
-    <!-- Ícono de la pestaña -->
-    <link
-        rel="icon"
-        type="image/png"
-        href="{% static 'img/favicon.png' %}?v=2"
-    >
-
-    <link
-        rel="shortcut icon"
-        type="image/png"
-        href="{% static 'img/favicon.png' %}?v=2"
-    >
-
-    <link
-        rel="apple-touch-icon"
-        href="{% static 'img/favicon.png' %}?v=2"
-    >
-
-    <!-- Estilos generales -->
     <link
         rel="stylesheet"
-        href="{% static 'css/styles.css' %}?v=20260710-live-search-2"
+        href="{% static 'css/styles.css' %}?v=20260710-4"
     >
 
     {% block extra_css %}
     {% endblock %}
-
 </head>
-
 
 <body class="{% block body_class %}{% endblock %}">
 
     {% if messages %}
-
         <div
             class="toast-stack"
             aria-live="polite"
         >
-
             {% for message in messages %}
-
                 <div
                     class="toast toast-{{ message.tags|default:'info' }}"
                 >
                     {{ message }}
                 </div>
-
             {% endfor %}
-
         </div>
-
     {% endif %}
-
 
     {% block content %}
     {% endblock %}
 
-
     <script
-        src="{% static 'js/app.js' %}?v=20260710-live-search-2"
+        src="{% static 'js/app.js' %}?v=20260710-4"
     ></script>
-
 
     {% block extra_js %}
     {% endblock %}
 
 </body>
-
 </html>
