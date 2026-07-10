@@ -2,7 +2,7 @@ from django.contrib.auth import views as auth_views
 from django.urls import path
 
 from . import views
-from . import views_pedidos
+from . import views_stock
 
 
 urlpatterns = [
@@ -91,6 +91,12 @@ urlpatterns = [
     ),
 
     path(
+        "panel/productos/importar-stock/",
+        views_stock.importar_stock,
+        name="importar_stock",
+    ),
+
+    path(
         "panel/productos/exportar/",
         views.exportar_productos_csv,
         name="exportar_productos_csv",
@@ -110,13 +116,13 @@ urlpatterns = [
 
     path(
         "panel/pedidos/<int:pedido_id>/eliminar/",
-        views_pedidos.eliminar_pedido_cancelado,
+        views.eliminar_pedido_cancelado,
         name="eliminar_pedido_cancelado",
     ),
 
     path(
         "panel/pedidos/eliminar-cancelados/",
-        views_pedidos.eliminar_todos_cancelados,
+        views.eliminar_todos_cancelados,
         name="eliminar_todos_cancelados",
     ),
 ]
