@@ -12,6 +12,10 @@ admin-body
 
 <div class="admin-layout styled-admin-layout">
 
+    <!-- =====================================================
+         MENÚ LATERAL
+         ===================================================== -->
+
     <aside class="sidebar styled-sidebar">
 
         <a
@@ -22,7 +26,10 @@ admin-body
 
             <div>
                 Ferretería
-                <small>Don José</small>
+
+                <small>
+                    Don José
+                </small>
             </div>
         </a>
 
@@ -34,6 +41,7 @@ admin-body
                 href="{% url 'dashboard' %}"
             >
                 <span>▦</span>
+
                 Productos
             </a>
 
@@ -45,7 +53,11 @@ admin-body
                 Pedidos
 
                 {% if pedidos_pendientes %}
-                    <b>{{ pedidos_pendientes }}</b>
+
+                    <b>
+                        {{ pedidos_pendientes }}
+                    </b>
+
                 {% endif %}
 
             </a>
@@ -57,12 +69,17 @@ admin-body
             class="sidebar-client"
             href="{% url 'catalogo' %}"
             target="_blank"
+            rel="noopener"
         >
             Ver vista cliente ↗
         </a>
 
     </aside>
 
+
+    <!-- =====================================================
+         CONTENIDO PRINCIPAL
+         ===================================================== -->
 
     <main class="admin-main styled-admin-main">
 
@@ -84,9 +101,13 @@ admin-body
             <div class="user-menu">
 
                 Hola,
+
                 {{ request.user.first_name|default:request.user.username }}
 
-                <span>●</span>
+                <span>
+                    ●
+                </span>
+
 
                 <form
                     method="post"
@@ -95,7 +116,7 @@ admin-body
 
                     {% csrf_token %}
 
-                    <button>
+                    <button type="submit">
                         Salir
                     </button>
 
@@ -105,6 +126,10 @@ admin-body
 
         </header>
 
+
+        <!-- =====================================================
+             INDICADORES
+             ===================================================== -->
 
         <section class="metric-grid styled-metric-grid">
 
@@ -210,6 +235,10 @@ admin-body
         </section>
 
 
+        <!-- =====================================================
+             INVENTARIO
+             ===================================================== -->
+
         <section
             class="panel-card inventory-card styled-inventory-card"
             id="inventario"
@@ -260,6 +289,10 @@ admin-body
             </div>
 
 
+            <!-- =====================================================
+                 BUSCADOR Y FILTROS
+                 ===================================================== -->
+
             <form
                 method="get"
                 class="admin-filters"
@@ -270,14 +303,19 @@ admin-body
                     name="q"
                     value="{{ q }}"
                     placeholder="Buscar producto o categoría..."
+                    aria-label="Buscar producto o categoría"
                 >
 
 
-                <select name="categoria">
+                <select
+                    name="categoria"
+                    aria-label="Filtrar por categoría"
+                >
 
                     <option value="">
                         Todas las categorías
                     </option>
+
 
                     {% for categoria in categorias %}
 
@@ -295,12 +333,19 @@ admin-body
                 </select>
 
 
-                <button class="btn btn-light">
+                <button
+                    type="submit"
+                    class="btn btn-light"
+                >
                     Filtrar
                 </button>
 
             </form>
 
+
+            <!-- =====================================================
+                 TABLA DE PRODUCTOS
+                 ===================================================== -->
 
             <div class="table-wrap">
 
@@ -334,7 +379,9 @@ admin-body
                                 Última actualización
                             </th>
 
-                            <th></th>
+                            <th>
+                                Acción
+                            </th>
 
                         </tr>
 
@@ -347,40 +394,29 @@ admin-body
 
                             <tr>
 
+                                <!-- Producto e imagen -->
+
                                 <td>
 
                                     <div class="table-product-cell">
 
-                                        <span class="table-product-photo-frame">
+                                        {% if producto.imagen %}
 
-                                            {% if producto.imagen %}
+                                            <span class="table-product-photo-frame">
 
                                                 <img
                                                     class="table-product-photo"
                                                     src="{{ producto.imagen.url }}"
                                                     alt="{{ producto.nombre }}"
                                                     loading="lazy"
-                                                    onerror="this.hidden=true; this.nextElementSibling.hidden=false;"
+                                                    onerror="
+                                                        this.parentElement.style.display = 'none';
+                                                    "
                                                 >
 
-                                                <span
-                                                    class="table-product-photo table-product-photo-empty"
-                                                    hidden
-                                                >
-                                                    Sin foto
-                                                </span>
+                                            </span>
 
-                                            {% else %}
-
-                                                <span
-                                                    class="table-product-photo table-product-photo-empty"
-                                                >
-                                                    Sin foto
-                                                </span>
-
-                                            {% endif %}
-
-                                        </span>
+                                        {% endif %}
 
 
                                         <strong>
@@ -392,20 +428,28 @@ admin-body
                                 </td>
 
 
+                                <!-- Categoría -->
+
                                 <td>
                                     {{ producto.categoria.nombre }}
                                 </td>
 
+
+                                <!-- Stock -->
 
                                 <td>
                                     {{ producto.stock }}
                                 </td>
 
 
+                                <!-- Precio -->
+
                                 <td>
                                     ${{ producto.precio|floatformat:0 }}
                                 </td>
 
+
+                                <!-- Estado -->
 
                                 <td>
 
@@ -426,10 +470,14 @@ admin-body
                                 </td>
 
 
+                                <!-- Última actualización -->
+
                                 <td>
                                     {{ producto.actualizado_en|date:'d/m/Y H:i' }}
                                 </td>
 
+
+                                <!-- Editar -->
 
                                 <td>
 
