@@ -3,11 +3,61 @@ from decimal import Decimal, ROUND_HALF_UP
 
 from django.contrib import messages
 from django.db import transaction
+from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
+from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_POST
 
 from .forms import PedidoForm
 from .models import ItemPedido, Pedido, Producto
+
+
+def _es_peticion_ajax(request):
+    """
+    Detecta las peticiones enviadas desde JavaScript con fetch.
+    """
+
+    return (
+        request.headers.get("X-Requested-With") == "XMLHttpRequest"
+        or "application/json" in request.headers.get("Accept", "")
+    )
+
+
+def _url_retorno(request):
+    """
+    Devuelve una URL segura después de una operación tradicional.
+
+    Esto permite conservar la búsqueda o categoría que estaba viendo
+    el cliente sin aceptar redirecciones externas.
+    """
+
+    siguiente = request.POST.get("next", "").strip()
+
+    if siguiente and url_has_allowed_host_and_scheme(
+        url=siguiente,
+        allowed_hosts={request.get_host()},
+        require_https=request.is_secure(),
+    ):
+        return siguiente
+
+    return reverse("catalogo")
+
+
+def _cantidad_total_carrito(carrito):
+    """
+    Calcula la cantidad total de unidades reservadas.
+    """
+
+    total = 0
+
+    for cantidad in carrito.values():
+        try:
+            total += int(cantidad)
+        except (TypeError, ValueError):
+            continue
+
+    return total
 
 
 def _desglosar_iva(total):
@@ -31,7 +81,7 @@ def _desglosar_iva(total):
 
 def _carrito_sesion(request):
     """
-    Obtiene el carrito y elimina valores inválidos.
+    Obtiene el carrito guardado en la sesión y elimina valores inválidos.
     """
 
     carrito = request.session.get(
@@ -39,31 +89,23 @@ def _carrito_sesion(request):
         {},
     )
 
+    if not isinstance(carrito, dict):
+        carrito = {}
+
     carrito_limpio = {}
 
     for producto_id, cantidad in carrito.items():
-
         try:
-            producto_id = str(
-                int(producto_id)
-            )
-
+            producto_id = str(int(producto_id))
             cantidad = int(cantidad)
-
         except (TypeError, ValueError):
             continue
 
         if cantidad > 0:
-            carrito_limpio[
-                producto_id
-            ] = cantidad
+            carrito_limpio[producto_id] = cantidad
 
     if carrito_limpio != carrito:
-
-        request.session[
-            "carrito"
-        ] = carrito_limpio
-
+        request.session["carrito"] = carrito_limpio
         request.session.modified = True
 
     return carrito_limpio
@@ -74,10 +116,10 @@ def _items_carrito(request):
     Construye los productos reservados en el carrito.
 
     producto.stock:
-        unidades que continúan disponibles.
+        unidades que todavía están disponibles para otros clientes.
 
     cantidad:
-        unidades reservadas por este carrito.
+        unidades reservadas por esta sesión.
     """
 
     carrito = _carrito_sesion(request)
@@ -97,29 +139,18 @@ def _items_carrito(request):
     total = Decimal("0")
 
     for producto_id, cantidad in carrito.items():
-
-        producto = productos_por_id.get(
-            producto_id
-        )
+        producto = productos_por_id.get(producto_id)
 
         if producto is None:
             continue
 
-        subtotal = (
-            producto.precio * cantidad
-        )
+        subtotal = producto.precio * cantidad
 
         items.append(
             {
                 "producto": producto,
                 "cantidad": cantidad,
-
-                # Cantidad reservada actualmente
-                # más las unidades todavía disponibles.
-                "max_cantidad": (
-                    cantidad + producto.stock
-                ),
-
+                "max_cantidad": cantidad + producto.stock,
                 "subtotal": subtotal,
             }
         )
@@ -133,8 +164,10 @@ def _items_carrito(request):
 @transaction.atomic
 def agregar_carrito(request, producto_id):
     """
-    Agrega una unidad al carrito y la descuenta
-    inmediatamente del stock.
+    Agrega una unidad al carrito y la descuenta inmediatamente del stock.
+
+    Cuando la petición viene desde JavaScript devuelve JSON, evitando
+    que el navegador recargue la página completa.
     """
 
     producto = get_object_or_404(
@@ -144,18 +177,29 @@ def agregar_carrito(request, producto_id):
     )
 
     if producto.stock <= 0:
+        mensaje = "Este producto ya no tiene stock disponible."
+
+        if _es_peticion_ajax(request):
+            return JsonResponse(
+                {
+                    "ok": False,
+                    "mensaje": mensaje,
+                    "producto_id": producto.id,
+                    "stock": 0,
+                    "disponible": False,
+                },
+                status=409,
+            )
 
         messages.error(
             request,
-            "Este producto ya no tiene stock disponible.",
+            mensaje,
         )
 
         return redirect(
-            request.POST.get("next")
-            or "catalogo"
+            _url_retorno(request)
         )
 
-    # Se reserva una unidad inmediatamente.
     producto.stock -= 1
 
     producto.save(
@@ -169,60 +213,65 @@ def agregar_carrito(request, producto_id):
 
     clave = str(producto.id)
 
-    cantidad_actual = int(
+    carrito[clave] = int(
         carrito.get(clave, 0)
-    )
+    ) + 1
 
-    carrito[clave] = (
-        cantidad_actual + 1
-    )
-
-    request.session[
-        "carrito"
-    ] = carrito
-
+    request.session["carrito"] = carrito
     request.session.modified = True
+
+    cantidad_carrito = _cantidad_total_carrito(
+        carrito
+    )
+
+    mensaje = (
+        f"{producto.nombre} fue agregado "
+        "y quedó reservado."
+    )
+
+    if _es_peticion_ajax(request):
+        return JsonResponse(
+            {
+                "ok": True,
+                "mensaje": mensaje,
+                "producto_id": producto.id,
+                "nombre": producto.nombre,
+                "stock": producto.stock,
+                "disponible": producto.stock > 0,
+                "cantidad_carrito": cantidad_carrito,
+                "cantidad_producto_carrito": carrito[clave],
+            }
+        )
 
     messages.success(
         request,
-        (
-            f"{producto.nombre} fue agregado "
-            "y quedó reservado."
-        ),
+        mensaje,
     )
 
     return redirect(
-        request.POST.get("next")
-        or "catalogo"
+        _url_retorno(request)
     )
 
 
 def carrito(request):
     """
-    Muestra el carrito y el formulario del pedido.
+    Muestra el carrito y el formulario para generar el pedido.
     """
 
-    items, total = _items_carrito(
-        request
-    )
+    items, total = _items_carrito(request)
 
-    neto, iva = _desglosar_iva(
-        total
-    )
+    neto, iva = _desglosar_iva(total)
 
     inicial = {}
 
     if request.user.is_authenticated:
-
         inicial["cliente_nombre"] = (
             request.user.get_full_name()
             or request.user.first_name
             or request.user.username
         )
 
-        inicial["factura_email"] = (
-            request.user.email
-        )
+        inicial["factura_email"] = request.user.email
 
     return render(
         request,
@@ -232,9 +281,7 @@ def carrito(request):
             "total": total,
             "neto": neto,
             "iva": iva,
-            "form": PedidoForm(
-                initial=inicial
-            ),
+            "form": PedidoForm(initial=inicial),
         },
     )
 
@@ -243,16 +290,16 @@ def carrito(request):
 @transaction.atomic
 def actualizar_carrito(request, producto_id):
     """
-    Actualiza automáticamente la cantidad reservada.
+    Actualiza la cantidad reservada.
 
     Si aumenta:
-        descuenta la diferencia.
+        descuenta unidades del inventario.
 
     Si disminuye:
-        devuelve la diferencia.
+        devuelve unidades al inventario.
 
     Si llega a cero:
-        elimina el producto y devuelve todo.
+        elimina el producto del carrito.
     """
 
     producto = get_object_or_404(
@@ -260,9 +307,7 @@ def actualizar_carrito(request, producto_id):
         pk=producto_id,
     )
 
-    carrito = _carrito_sesion(
-        request
-    )
+    carrito = _carrito_sesion(request)
 
     clave = str(producto.id)
 
@@ -271,15 +316,12 @@ def actualizar_carrito(request, producto_id):
     )
 
     if cantidad_actual <= 0:
-
         messages.error(
             request,
             "El producto ya no está en el carrito.",
         )
 
-        return redirect(
-            "carrito"
-        )
+        return redirect("carrito")
 
     try:
         cantidad_nueva = int(
@@ -288,7 +330,6 @@ def actualizar_carrito(request, producto_id):
                 cantidad_actual,
             )
         )
-
     except (TypeError, ValueError):
         cantidad_nueva = cantidad_actual
 
@@ -297,16 +338,10 @@ def actualizar_carrito(request, producto_id):
         cantidad_nueva,
     )
 
-    diferencia = (
-        cantidad_nueva
-        - cantidad_actual
-    )
+    diferencia = cantidad_nueva - cantidad_actual
 
-    # El cliente quiere aumentar la cantidad.
     if diferencia > 0:
-
         if producto.stock < diferencia:
-
             messages.error(
                 request,
                 (
@@ -316,9 +351,7 @@ def actualizar_carrito(request, producto_id):
                 ),
             )
 
-            return redirect(
-                "carrito"
-            )
+            return redirect("carrito")
 
         producto.stock -= diferencia
 
@@ -329,16 +362,8 @@ def actualizar_carrito(request, producto_id):
             ]
         )
 
-    # El cliente quiere disminuir la cantidad.
     elif diferencia < 0:
-
-        unidades_a_devolver = abs(
-            diferencia
-        )
-
-        producto.stock += (
-            unidades_a_devolver
-        )
+        producto.stock += abs(diferencia)
 
         producto.save(
             update_fields=[
@@ -347,9 +372,7 @@ def actualizar_carrito(request, producto_id):
             ]
         )
 
-    # Si llega a cero, se elimina del carrito.
     if cantidad_nueva == 0:
-
         carrito.pop(
             clave,
             None,
@@ -364,28 +387,20 @@ def actualizar_carrito(request, producto_id):
         )
 
     else:
+        carrito[clave] = cantidad_nueva
 
-        carrito[
-            clave
-        ] = cantidad_nueva
-
-    request.session[
-        "carrito"
-    ] = carrito
-
+    request.session["carrito"] = carrito
     request.session.modified = True
 
-    return redirect(
-        "carrito"
-    )
+    return redirect("carrito")
 
 
 @require_POST
 @transaction.atomic
 def eliminar_carrito(request, producto_id):
     """
-    Elimina el producto y devuelve automáticamente
-    todas sus unidades al stock.
+    Elimina el producto del carrito y devuelve automáticamente
+    todas sus unidades al inventario.
     """
 
     producto = get_object_or_404(
@@ -393,9 +408,7 @@ def eliminar_carrito(request, producto_id):
         pk=producto_id,
     )
 
-    carrito = _carrito_sesion(
-        request
-    )
+    carrito = _carrito_sesion(request)
 
     clave = str(producto.id)
 
@@ -404,7 +417,6 @@ def eliminar_carrito(request, producto_id):
     )
 
     if cantidad > 0:
-
         producto.stock += cantidad
 
         producto.save(
@@ -423,15 +435,10 @@ def eliminar_carrito(request, producto_id):
             ),
         )
 
-    request.session[
-        "carrito"
-    ] = carrito
-
+    request.session["carrito"] = carrito
     request.session.modified = True
 
-    return redirect(
-        "carrito"
-    )
+    return redirect("carrito")
 
 
 @require_POST
@@ -440,34 +447,24 @@ def crear_pedido(request):
     """
     Convierte la reserva del carrito en un pedido.
 
-    El stock ya fue descontado cuando los productos
-    fueron agregados, por lo que no se vuelve a descontar.
+    El stock ya fue descontado cuando los productos se agregaron
+    al carrito. Por eso no se vuelve a descontar aquí.
     """
 
-    items, total = _items_carrito(
-        request
-    )
+    items, total = _items_carrito(request)
 
-    form = PedidoForm(
-        request.POST
-    )
+    form = PedidoForm(request.POST)
 
     if not items:
-
         messages.error(
             request,
             "El carrito está vacío.",
         )
 
-        return redirect(
-            "catalogo"
-        )
+        return redirect("catalogo")
 
     if not form.is_valid():
-
-        neto, iva = _desglosar_iva(
-            total
-        )
+        neto, iva = _desglosar_iva(total)
 
         return render(
             request,
@@ -485,11 +482,9 @@ def crear_pedido(request):
         "metodo_pago"
     ]
 
-    numero_tarjeta = (
-        form.cleaned_data.get(
-            "numero_tarjeta",
-            "",
-        )
+    numero_tarjeta = form.cleaned_data.get(
+        "numero_tarjeta",
+        "",
     )
 
     pedido = Pedido.objects.create(
@@ -499,23 +494,17 @@ def crear_pedido(request):
             else None
         ),
 
-        cliente_nombre=(
-            form.cleaned_data[
-                "cliente_nombre"
-            ]
-        ),
+        cliente_nombre=form.cleaned_data[
+            "cliente_nombre"
+        ],
 
-        cliente_telefono=(
-            form.cleaned_data[
-                "cliente_telefono"
-            ]
-        ),
+        cliente_telefono=form.cleaned_data[
+            "cliente_telefono"
+        ],
 
-        observacion=(
-            form.cleaned_data.get(
-                "observacion",
-                "",
-            )
+        observacion=form.cleaned_data.get(
+            "observacion",
+            "",
         ),
 
         estado="pendiente",
@@ -540,50 +529,38 @@ def crear_pedido(request):
             else ""
         ),
 
-        tipo_documento=(
-            form.cleaned_data[
-                "tipo_documento"
-            ]
+        tipo_documento=form.cleaned_data[
+            "tipo_documento"
+        ],
+
+        factura_rut=form.cleaned_data.get(
+            "factura_rut",
+            "",
         ),
 
-        factura_rut=(
-            form.cleaned_data.get(
-                "factura_rut",
-                "",
-            )
+        factura_razon_social=form.cleaned_data.get(
+            "factura_razon_social",
+            "",
         ),
 
-        factura_razon_social=(
-            form.cleaned_data.get(
-                "factura_razon_social",
-                "",
-            )
+        factura_giro=form.cleaned_data.get(
+            "factura_giro",
+            "",
         ),
 
-        factura_giro=(
-            form.cleaned_data.get(
-                "factura_giro",
-                "",
-            )
+        factura_direccion=form.cleaned_data.get(
+            "factura_direccion",
+            "",
         ),
 
-        factura_direccion=(
-            form.cleaned_data.get(
-                "factura_direccion",
-                "",
-            )
-        ),
-
-        factura_email=(
-            form.cleaned_data.get(
-                "factura_email",
-                "",
-            )
+        factura_email=form.cleaned_data.get(
+            "factura_email",
+            "",
         ),
 
         total=total,
 
-        # El inventario ya fue reservado.
+        # El stock ya fue reservado desde el catálogo.
         stock_descontado=True,
     )
 
@@ -591,31 +568,21 @@ def crear_pedido(request):
         [
             ItemPedido(
                 pedido=pedido,
-                producto=item[
-                    "producto"
-                ],
-                cantidad=item[
-                    "cantidad"
-                ],
-                precio_unitario=item[
-                    "producto"
-                ].precio,
+                producto=item["producto"],
+                cantidad=item["cantidad"],
+                precio_unitario=item["producto"].precio,
             )
             for item in items
         ]
     )
 
-    # Se limpia el carrito sin devolver stock,
-    # porque ahora pertenece al pedido.
-    request.session[
-        "carrito"
-    ] = {}
+    # Se vacía el carrito, pero no se devuelve el stock,
+    # porque ahora la reserva pertenece al pedido.
+    request.session["carrito"] = {}
 
-    pedidos_sesion = (
-        request.session.get(
-            "pedidos_sesion",
-            [],
-        )
+    pedidos_sesion = request.session.get(
+        "pedidos_sesion",
+        [],
     )
 
     if pedido.id not in pedidos_sesion:
@@ -623,14 +590,8 @@ def crear_pedido(request):
             pedido.id
         )
 
-    request.session[
-        "pedidos_sesion"
-    ] = pedidos_sesion[-20:]
-
-    request.session[
-        "ultimo_pedido_id"
-    ] = pedido.id
-
+    request.session["pedidos_sesion"] = pedidos_sesion[-20:]
+    request.session["ultimo_pedido_id"] = pedido.id
     request.session.modified = True
 
     return redirect(
