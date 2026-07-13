@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 
 {% block title %}
-Pedidos | Don José
+Pedidos | Ferretería Don José
 {% endblock %}
 
 {% block body_class %}
@@ -9,701 +9,1211 @@ admin-body
 {% endblock %}
 
 {% block extra_css %}
+
 <style>
-    .orders-management-bar {
+    .orders-page {
+        min-height: 100vh;
+        background:
+            radial-gradient(
+                circle at top right,
+                rgba(255, 255, 255, 0.75),
+                transparent 38%
+            ),
+            #f4eee9;
+        color: #082855;
+    }
+
+    /* =====================================================
+       BARRA SUPERIOR
+       ===================================================== */
+
+    .orders-topbar {
+        position: relative;
+        z-index: 100;
         display: flex;
         align-items: center;
         justify-content: space-between;
-        gap: 16px;
-        margin: 18px 0;
-        flex-wrap: wrap;
+        min-height: 54px;
+        padding: 0 18px 0 56px;
+        background: #173d70;
+        box-shadow: 0 10px 24px rgba(15, 40, 76, 0.16);
     }
+
+    .orders-brand {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        color: #ffffff;
+        text-decoration: none;
+        font-size: 0.96rem;
+        font-weight: 900;
+    }
+
+    .orders-brand:hover {
+        color: #ffffff;
+    }
+
+    .orders-brand-icon {
+        font-size: 1rem;
+    }
+
+    /*
+     * Este botón es un enlace real.
+     * z-index y pointer-events evitan que otro elemento bloquee el clic.
+     */
+    .back-panel-button {
+        position: relative;
+        z-index: 999;
+        pointer-events: auto;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 42px;
+        padding: 8px 17px;
+        border: 1px solid rgba(255, 255, 255, 0.32);
+        border-radius: 12px;
+        background: transparent;
+        color: #ffffff;
+        text-decoration: none;
+        font-weight: 900;
+        cursor: pointer;
+        transition:
+            background 0.18s ease,
+            transform 0.18s ease;
+    }
+
+    .back-panel-button:hover {
+        background: rgba(255, 255, 255, 0.12);
+        color: #ffffff;
+        transform: translateY(-1px);
+    }
+
+    .back-panel-button:focus-visible {
+        outline: 3px solid rgba(255, 255, 255, 0.7);
+        outline-offset: 3px;
+    }
+
+    /* =====================================================
+       CONTENIDO
+       ===================================================== */
+
+    .orders-container {
+        width: min(1440px, calc(100% - 34px));
+        margin: 0 auto;
+        padding: 34px 0 70px;
+    }
+
+    .orders-heading-row {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 30px;
+    }
+
+    .orders-heading {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .orders-eyebrow {
+        margin: 0 0 10px;
+        color: #0054a6;
+        font-size: 0.74rem;
+        font-weight: 900;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+    }
+
+    .orders-heading h1 {
+        margin: 0 0 8px;
+        color: #082855;
+        font-size: clamp(2rem, 4vw, 2.55rem);
+        line-height: 1.05;
+    }
+
+    .orders-description {
+        margin: 0;
+        color: #687896;
+        font-size: 1rem;
+        line-height: 1.5;
+    }
+
+    /* =====================================================
+       FILTROS
+       ===================================================== */
+
+    .orders-filters {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(190px, 1fr));
+        gap: 10px;
+        width: min(410px, 100%);
+    }
+
+    .orders-filter-field {
+        display: grid;
+        gap: 6px;
+    }
+
+    .orders-filter-field label {
+        color: #44516f;
+        font-size: 0.74rem;
+        font-weight: 900;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+    }
+
+    .orders-filter-field select {
+        width: 100%;
+        min-height: 47px;
+        padding: 10px 14px;
+        border: 1px solid #ddc7b9;
+        border-radius: 13px;
+        background: #ffffff;
+        color: #082855;
+        outline: none;
+        font-weight: 700;
+        cursor: pointer;
+    }
+
+    .orders-filter-field select:focus {
+        border-color: #194d88;
+        box-shadow: 0 0 0 3px rgba(25, 77, 136, 0.12);
+    }
+
+    /* =====================================================
+       PESTAÑAS
+       ===================================================== */
 
     .orders-tabs {
         display: flex;
-        gap: 8px;
         flex-wrap: wrap;
+        gap: 9px;
+        margin-top: 18px;
     }
 
     .orders-tab {
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        gap: 8px;
-        min-height: 42px;
-        padding: 10px 16px;
-        border: 1px solid #dacdc3;
-        border-radius: 12px;
+        gap: 9px;
+        min-height: 47px;
+        padding: 10px 17px;
+        border: 1px solid #decfc5;
+        border-radius: 13px;
         background: #ffffff;
-        color: #173764;
-        font-weight: 800;
-        transition: 0.2s ease;
+        color: #082855;
+        text-decoration: none;
+        font-weight: 900;
+        box-shadow: 0 6px 13px rgba(37, 49, 72, 0.04);
     }
 
     .orders-tab:hover {
-        transform: translateY(-1px);
-        border-color: #173764;
+        color: #082855;
+        border-color: #9fb1c7;
     }
 
     .orders-tab.active {
-        background: #173f77;
-        border-color: #173f77;
+        border-color: #194d88;
+        background: #194d88;
         color: #ffffff;
-        box-shadow: 0 8px 18px rgba(23, 63, 119, 0.18);
+        box-shadow: 0 10px 20px rgba(25, 77, 136, 0.2);
     }
 
     .orders-tab-count {
-        display: inline-grid;
+        display: grid;
+        min-width: 25px;
+        height: 25px;
+        padding: 0 6px;
         place-items: center;
-        min-width: 24px;
-        height: 24px;
-        padding: 0 7px;
         border-radius: 999px;
+        background: #edf3fa;
+        color: #16477e;
+        font-size: 0.75rem;
+    }
+
+    .orders-tab.active .orders-tab-count {
         background: rgba(255, 255, 255, 0.2);
+        color: #ffffff;
+    }
+
+    /* =====================================================
+       AVISOS Y RESUMEN
+       ===================================================== */
+
+    .orders-information {
+        margin-top: 17px;
+        padding: 13px 15px;
+        border: 1px solid #e8ccbb;
+        border-radius: 14px;
+        background: rgba(255, 255, 255, 0.55);
+        color: #95502d;
+        font-size: 0.88rem;
+        line-height: 1.45;
+    }
+
+    .orders-summary {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 30px;
+        margin-top: 17px;
+        padding: 14px 16px;
+        border: 1px solid #dfd2c9;
+        border-radius: 15px;
+        background: rgba(255, 255, 255, 0.78);
+        color: #5c6f8c;
+    }
+
+    .orders-summary strong {
+        color: #082855;
+    }
+
+    /* =====================================================
+       ELIMINAR CANCELADOS
+       ===================================================== */
+
+    .cancelled-actions {
+        display: flex;
+        justify-content: flex-end;
+        margin-top: 15px;
+    }
+
+    .delete-all-button {
+        min-height: 42px;
+        padding: 9px 15px;
+        border: 0;
+        border-radius: 11px;
+        background: #a63333;
+        color: #ffffff;
+        font-weight: 900;
+        cursor: pointer;
+    }
+
+    .delete-all-button:hover {
+        background: #862525;
+    }
+
+    /* =====================================================
+       LISTADO DE PEDIDOS
+       ===================================================== */
+
+    .orders-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 18px;
+        margin-top: 18px;
+    }
+
+    .order-card {
+        position: relative;
+        overflow: hidden;
+        border: 1px solid #e1d5cd;
+        border-radius: 22px;
+        background: #ffffff;
+        box-shadow: 0 15px 34px rgba(49, 58, 74, 0.08);
+    }
+
+    .order-card-header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 18px;
+        padding: 20px 20px 14px;
+    }
+
+    .order-code {
+        display: block;
+        margin-bottom: 7px;
+        color: #6680a4;
         font-size: 0.78rem;
     }
 
-    .orders-tab:not(.active) .orders-tab-count {
-        background: #edf2f8;
-        color: #173f77;
+    .order-client-name {
+        margin: 0 0 4px;
+        color: #082855;
+        font-size: 1.08rem;
     }
 
-    .delete-cancelled-form {
+    .order-client-phone {
         margin: 0;
+        color: #647694;
     }
 
-    .btn-delete-cancelled {
+    .order-status {
+        flex: 0 0 auto;
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        gap: 8px;
-        min-height: 42px;
-        padding: 10px 16px;
-        border: 1px solid #d85656;
+        min-width: 76px;
+        min-height: 64px;
+        padding: 9px 12px;
+        border-radius: 999px;
+        font-size: 0.72rem;
+        font-weight: 900;
+        text-align: center;
+    }
+
+    .order-status.pendiente {
+        background: #fff2ce;
+        color: #966500;
+    }
+
+    .order-status.listo {
+        background: #dceefc;
+        color: #135c91;
+    }
+
+    .order-status.entregado {
+        background: #ddf3e3;
+        color: #236d40;
+    }
+
+    .order-status.cancelado {
+        background: #f8dddd;
+        color: #9a3434;
+    }
+
+    .order-card-body {
+        padding: 0 20px 20px;
+    }
+
+    .order-data-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+        margin-top: 7px;
+    }
+
+    .order-data-item {
+        padding: 11px 12px;
         border-radius: 12px;
-        background: #fff6f6;
-        color: #b02e2e;
-        font-weight: 800;
-        cursor: pointer;
+        background: #f8f5f2;
     }
 
-    .btn-delete-cancelled:hover {
-        background: #b93737;
-        color: #ffffff;
+    .order-data-item small {
+        display: block;
+        margin-bottom: 4px;
+        color: #77859b;
     }
 
-    .cancelled-delete-note {
-        margin: 0 0 18px;
-        padding: 12px 15px;
-        border: 1px solid #ead4c7;
-        border-radius: 12px;
-        background: rgba(255, 250, 246, 0.92);
-        color: #76584a;
-        font-size: 0.9rem;
+    .order-data-item strong {
+        color: #082855;
     }
 
-    .order-delete-row {
+    .order-message {
+        margin-top: 13px;
+        padding: 13px;
+        border-left: 4px solid #194d88;
+        border-radius: 10px;
+        background: #eef4fb;
+        color: #344f71;
+        line-height: 1.45;
+    }
+
+    .order-message strong {
+        display: block;
+        margin-bottom: 5px;
+        color: #082855;
+    }
+
+    .order-items {
+        margin-top: 14px;
+        border: 1px solid #eee4dc;
+        border-radius: 13px;
+        overflow: hidden;
+    }
+
+    .order-item-row {
         display: flex;
-        justify-content: flex-end;
-        margin-top: 12px;
-        padding-top: 12px;
+        align-items: center;
+        justify-content: space-between;
+        gap: 14px;
+        padding: 10px 12px;
+        border-bottom: 1px solid #eee4dc;
+        color: #52657f;
+    }
+
+    .order-item-row:last-child {
+        border-bottom: 0;
+    }
+
+    .order-item-row strong {
+        color: #082855;
+    }
+
+    .order-total {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-top: 14px;
+        padding-top: 14px;
         border-top: 1px solid #eadfd7;
     }
 
-    .btn-delete-order {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        gap: 7px;
-        min-height: 38px;
-        padding: 9px 14px;
-        border: 1px solid #d95b5b;
+    .order-total span {
+        color: #657793;
+    }
+
+    .order-total strong {
+        color: #082855;
+        font-size: 1.25rem;
+    }
+
+    /* =====================================================
+       FORMULARIO DE ESTADO
+       ===================================================== */
+
+    .order-actions {
+        display: flex;
+        align-items: flex-end;
+        justify-content: space-between;
+        gap: 12px;
+        margin-top: 16px;
+    }
+
+    .order-state-form {
+        display: flex;
+        align-items: flex-end;
+        gap: 8px;
+        flex: 1;
+    }
+
+    .order-state-field {
+        display: grid;
+        gap: 5px;
+        flex: 1;
+    }
+
+    .order-state-field label {
+        color: #687892;
+        font-size: 0.72rem;
+        font-weight: 900;
+        text-transform: uppercase;
+    }
+
+    .order-state-field select {
+        width: 100%;
+        min-height: 42px;
+        padding: 8px 10px;
+        border: 1px solid #d5c8bf;
         border-radius: 10px;
-        background: #fff7f7;
-        color: #b52f2f;
-        font-weight: 800;
+        background: #ffffff;
+        color: #082855;
+        font-weight: 700;
+    }
+
+    .save-state-button {
+        min-height: 42px;
+        padding: 8px 13px;
+        border: 0;
+        border-radius: 10px;
+        background: #194d88;
+        color: #ffffff;
+        font-weight: 900;
         cursor: pointer;
     }
 
-    .btn-delete-order:hover {
-        background: #bd3636;
-        color: #ffffff;
+    .delete-order-button {
+        min-height: 42px;
+        padding: 8px 13px;
+        border: 1px solid #d9aaaa;
+        border-radius: 10px;
+        background: #fff3f3;
+        color: #9f3030;
+        font-weight: 900;
+        cursor: pointer;
     }
 
-    @media (max-width: 700px) {
-        .orders-management-bar {
+    /* =====================================================
+       SIN PEDIDOS
+       ===================================================== */
+
+    .orders-empty {
+        grid-column: 1 / -1;
+        padding: 50px 20px;
+        border: 1px dashed #d7c9c0;
+        border-radius: 20px;
+        background: rgba(255, 255, 255, 0.68);
+        color: #687892;
+        text-align: center;
+    }
+
+    .orders-empty span {
+        display: block;
+        margin-bottom: 10px;
+        font-size: 2.5rem;
+    }
+
+    .orders-empty h2 {
+        color: #082855;
+    }
+
+    /* =====================================================
+       RESPONSIVE
+       ===================================================== */
+
+    @media (max-width: 900px) {
+        .orders-heading-row {
+            flex-direction: column;
+        }
+
+        .orders-filters {
+            width: 100%;
+        }
+
+        .orders-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    @media (max-width: 620px) {
+        .orders-topbar {
+            padding: 7px 10px;
+        }
+
+        .orders-container {
+            width: min(100% - 18px, 1440px);
+            padding-top: 22px;
+        }
+
+        .orders-brand strong {
+            font-size: 0.82rem;
+        }
+
+        .back-panel-button {
+            min-height: 39px;
+            padding: 7px 11px;
+            font-size: 0.82rem;
+        }
+
+        .orders-filters {
+            grid-template-columns: 1fr;
+        }
+
+        .order-card-header {
+            padding: 16px 15px 12px;
+        }
+
+        .order-card-body {
+            padding: 0 15px 16px;
+        }
+
+        .order-data-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .order-actions,
+        .order-state-form {
             align-items: stretch;
             flex-direction: column;
         }
 
-        .orders-tabs,
-        .orders-tab,
-        .delete-cancelled-form,
-        .btn-delete-cancelled {
+        .save-state-button,
+        .delete-order-button {
             width: 100%;
-        }
-
-        .orders-tab {
-            flex: 1 1 auto;
         }
     }
 </style>
+
 {% endblock %}
+
 
 {% block content %}
 
-<header class="admin-simple-header">
+<div class="orders-page">
 
-    <a
-        class="admin-simple-brand"
-        href="{% url 'dashboard' %}"
-    >
-        <span>🏪</span>
-        <strong>Ferretería Don José</strong>
-    </a>
+    <!-- =====================================================
+         BARRA SUPERIOR
+         ===================================================== -->
 
-    <a
-        class="admin-simple-action"
-        href="{% url 'dashboard' %}"
-    >
-        Volver al panel
-    </a>
+    <header class="orders-topbar">
 
-</header>
+        <a
+            class="orders-brand"
+            href="{% url 'catalogo' %}"
+        >
+            <span class="orders-brand-icon">
+                🏪
+            </span>
+
+            <strong>
+                Ferretería Don José
+            </strong>
+        </a>
 
 
-<main class="orders-page styled-orders-page">
+        <!--
+            Este enlace lleva directamente al dashboard.
+            No debe convertirse en button ni usar href="#".
+        -->
 
-    <div class="orders-header orders-header-integrated">
+        <a
+            href="{% url 'dashboard' %}"
+            class="back-panel-button"
+        >
+            Volver al panel
+        </a>
 
-        <div>
+    </header>
 
-            <p class="eyebrow">
-                Gestión
-            </p>
 
-            <h1>
-                Pedidos
-            </h1>
+    <main class="orders-container">
 
-            <p class="orders-description">
-                Aquí también aparecen los mensajes u observaciones enviados
-                por los clientes al realizar su pedido.
-            </p>
+        <!-- =====================================================
+             TÍTULO Y FILTROS
+             ===================================================== -->
+
+        <section class="orders-heading-row">
+
+            <div class="orders-heading">
+
+                <p class="orders-eyebrow">
+                    Gestión
+                </p>
+
+                <h1>
+                    Pedidos
+                </h1>
+
+                <p class="orders-description">
+                    Aquí también aparecen los mensajes u observaciones
+                    enviados por los clientes al realizar su pedido.
+                </p>
+
+
+                <nav class="orders-tabs">
+
+                    <a
+                        href="{% url 'pedidos_panel' %}"
+                        class="
+                            orders-tab
+                            {% if request.GET.estado != 'cancelado' %}
+                                active
+                            {% endif %}
+                        "
+                    >
+                        Todos los pedidos
+                    </a>
+
+
+                    <a
+                        href="{% url 'pedidos_panel' %}?estado=cancelado"
+                        class="
+                            orders-tab
+                            {% if request.GET.estado == 'cancelado' %}
+                                active
+                            {% endif %}
+                        "
+                    >
+                        Cancelados
+
+                        <span class="orders-tab-count">
+                            {{ cancelados_count|default:0 }}
+                        </span>
+                    </a>
+
+                </nav>
+
+            </div>
+
+
+            <form
+                method="get"
+                action="{% url 'pedidos_panel' %}"
+                class="orders-filters"
+                id="orders-filter-form"
+            >
+
+                <div class="orders-filter-field">
+
+                    <label for="order-status-filter">
+                        Estado
+                    </label>
+
+                    <select
+                        id="order-status-filter"
+                        name="estado"
+                        onchange="this.form.submit();"
+                    >
+
+                        <option value="">
+                            Todos los estados
+                        </option>
+
+                        <option
+                            value="pendiente"
+                            {% if request.GET.estado == 'pendiente' %}
+                                selected
+                            {% endif %}
+                        >
+                            Pendientes
+                        </option>
+
+                        <option
+                            value="listo"
+                            {% if request.GET.estado == 'listo' %}
+                                selected
+                            {% endif %}
+                        >
+                            Pedidos listos
+                        </option>
+
+                        <option
+                            value="entregado"
+                            {% if request.GET.estado == 'entregado' %}
+                                selected
+                            {% endif %}
+                        >
+                            Entregados
+                        </option>
+
+                        <option
+                            value="cancelado"
+                            {% if request.GET.estado == 'cancelado' %}
+                                selected
+                            {% endif %}
+                        >
+                            Cancelados
+                        </option>
+
+                    </select>
+
+                </div>
+
+
+                <div class="orders-filter-field">
+
+                    <label for="order-message-filter">
+                        Mensajes
+                    </label>
+
+                    <select
+                        id="order-message-filter"
+                        name="mensaje"
+                        onchange="this.form.submit();"
+                    >
+
+                        <option value="">
+                            Todos los pedidos
+                        </option>
+
+                        <option
+                            value="con_mensaje"
+                            {% if request.GET.mensaje == 'con_mensaje' %}
+                                selected
+                            {% endif %}
+                        >
+                            Con mensaje
+                        </option>
+
+                        <option
+                            value="sin_mensaje"
+                            {% if request.GET.mensaje == 'sin_mensaje' %}
+                                selected
+                            {% endif %}
+                        >
+                            Sin mensaje
+                        </option>
+
+                    </select>
+
+                </div>
+
+            </form>
+
+        </section>
+
+
+        <!-- =====================================================
+             AVISO
+             ===================================================== -->
+
+        <div class="orders-information">
+            Los pedidos cancelados se eliminan automáticamente
+            cuando han pasado 24 horas. También puedes eliminarlos
+            manualmente desde esta pantalla.
+        </div>
+
+
+        <!-- =====================================================
+             RESUMEN
+             ===================================================== -->
+
+        <div class="orders-summary">
+
+            <span>
+                <strong>
+                    {{ pedidos|length }}
+                </strong>
+
+                pedido{% if pedidos|length != 1 %}s{% endif %}
+                mostrado{% if pedidos|length != 1 %}s{% endif %}
+            </span>
+
+
+            <span>
+                <strong>
+                    {{ pedidos_con_mensaje|default:0 }}
+                </strong>
+
+                con mensaje del cliente
+            </span>
 
         </div>
 
 
-        <form
-            method="get"
-            class="orders-filters"
-        >
+        <!-- =====================================================
+             ELIMINAR TODOS LOS CANCELADOS
+             ===================================================== -->
 
-            <label>
+        {% if request.GET.estado == 'cancelado' and cancelados_count %}
 
-                <span>
-                    Estado
-                </span>
-
-                <select
-                    name="estado"
-                    onchange="this.form.submit()"
-                >
-
-                    <option value="">
-                        Todos los estados
-                    </option>
-
-                    {% for valor, nombre in estados_pedido %}
-
-                        <option
-                            value="{{ valor }}"
-                            {% if estado == valor %}
-                                selected
-                            {% endif %}
-                        >
-                            {{ nombre }}
-                        </option>
-
-                    {% endfor %}
-
-                </select>
-
-            </label>
-
-
-            <label>
-
-                <span>
-                    Mensajes
-                </span>
-
-                <select
-                    name="con_mensaje"
-                    onchange="this.form.submit()"
-                >
-
-                    <option value="">
-                        Todos los pedidos
-                    </option>
-
-                    <option
-                        value="si"
-                        {% if con_mensaje == 'si' %}
-                            selected
-                        {% endif %}
-                    >
-                        Con mensaje
-                    </option>
-
-                    <option
-                        value="no"
-                        {% if con_mensaje == 'no' %}
-                            selected
-                        {% endif %}
-                    >
-                        Sin mensaje
-                    </option>
-
-                </select>
-
-            </label>
-
-        </form>
-
-    </div>
-
-
-    <div class="orders-management-bar">
-
-        <nav
-            class="orders-tabs"
-            aria-label="Vistas de pedidos"
-        >
-
-            <a
-                class="orders-tab
-                {% if estado != 'cancelado' %}
-                    active
-                {% endif %}"
-                href="{% url 'pedidos_panel' %}"
-            >
-                Todos los pedidos
-            </a>
-
-
-            <a
-                class="orders-tab
-                {% if estado == 'cancelado' %}
-                    active
-                {% endif %}"
-                href="{% url 'pedidos_panel' %}?estado=cancelado"
-            >
-
-                Cancelados
-
-                <span class="orders-tab-count">
-                    {{ cancelados_count }}
-                </span>
-
-            </a>
-
-        </nav>
-
-
-        {% if cancelados_count %}
-
-            <form
-                method="post"
-                action="{% url 'eliminar_todos_cancelados' %}"
-                class="delete-cancelled-form"
-                onsubmit="return confirm('¿Seguro que deseas eliminar definitivamente todos los pedidos cancelados? Esta acción no se puede deshacer.');"
-            >
-
-                {% csrf_token %}
-
-                <button
-                    type="submit"
-                    class="btn-delete-cancelled"
-                >
-                    🗑 Eliminar cancelados
-                </button>
-
-            </form>
-
-        {% endif %}
-
-    </div>
-
-
-    <p class="cancelled-delete-note">
-        Los pedidos cancelados se eliminan automáticamente cuando han pasado
-        24 horas. También puedes eliminarlos manualmente desde esta pantalla.
-    </p>
-
-
-    <div class="orders-summary-bar">
-
-        <span>
-            <strong>{{ pedidos|length }}</strong>
-            pedidos mostrados
-        </span>
-
-        <span>
-            <strong>{{ mensajes_count }}</strong>
-            con mensaje del cliente
-        </span>
-
-    </div>
-
-
-    {% if whatsapp_listo_url %}
-
-        <section
-            class="whatsapp-ready-banner"
-            data-whatsapp-ready
-        >
-
-            <div>
-
-                <strong>
-                    Pedido {{ whatsapp_listo_codigo }} listo para retirar
-                </strong>
-
-                <p>
-                    Presiona el botón para abrir WhatsApp con el mensaje preparado.
-                </p>
-
-            </div>
-
-
-            <a
-                class="btn btn-whatsapp"
-                href="{{ whatsapp_listo_url }}"
-                target="_blank"
-                rel="noopener"
-            >
-                Abrir WhatsApp
-            </a>
-
-        </section>
-
-    {% endif %}
-
-
-    <section class="orders-grid">
-
-        {% for pedido in pedidos %}
-
-            <article class="order-card styled-order-card">
-
-                <div class="order-card-head">
-
-                    <div>
-
-                        <small>
-                            {{ pedido.codigo_retiro }}
-                        </small>
-
-                        <h2>
-                            {{ pedido.cliente_nombre }}
-                        </h2>
-
-                        <p>
-                            {{ pedido.cliente_telefono }}
-                        </p>
-
-                    </div>
-
-
-                    <span class="pill {{ pedido.estado }}">
-                        {{ pedido.get_estado_display }}
-                    </span>
-
-                </div>
-
-
-                <div class="order-payment-info">
-
-                    <span>
-                        💳 {{ pedido.get_metodo_pago_display }}
-                    </span>
-
-
-                    <span
-                        class="pill
-                        {% if pedido.estado_pago == 'pagado' %}
-                            success
-                        {% else %}
-                            pendiente
-                        {% endif %}"
-                    >
-                        {{ pedido.get_estado_pago_display }}
-                    </span>
-
-
-                    <span>
-                        🧾 {{ pedido.get_tipo_documento_display }}
-                    </span>
-
-
-                    {% if pedido.tarjeta_ultimos4 %}
-
-                        <span>
-                            •••• {{ pedido.tarjeta_ultimos4 }}
-                        </span>
-
-                    {% endif %}
-
-                </div>
-
-
-                {% if pedido.tipo_documento == 'factura' %}
-
-                    <section class="admin-invoice-data">
-
-                        <div class="customer-message-title">
-
-                            <span>
-                                📄
-                            </span>
-
-                            <strong>
-                                Datos para factura
-                            </strong>
-
-                        </div>
-
-
-                        <div class="admin-invoice-grid">
-
-                            <span>
-                                <small>RUT</small>
-                                <strong>{{ pedido.factura_rut }}</strong>
-                            </span>
-
-                            <span>
-                                <small>Razón social</small>
-                                <strong>
-                                    {{ pedido.factura_razon_social }}
-                                </strong>
-                            </span>
-
-                            <span>
-                                <small>Giro</small>
-                                <strong>{{ pedido.factura_giro }}</strong>
-                            </span>
-
-                            <span>
-                                <small>Dirección</small>
-                                <strong>
-                                    {{ pedido.factura_direccion }}
-                                </strong>
-                            </span>
-
-                            <span>
-                                <small>Correo</small>
-                                <strong>{{ pedido.factura_email }}</strong>
-                            </span>
-
-                        </div>
-
-                    </section>
-
-                {% endif %}
-
-
-                <div class="order-items">
-
-                    {% for item in pedido.items.all %}
-
-                        <div>
-
-                            <span>
-                                {{ item.cantidad }}
-                                ×
-                                {{ item.producto.nombre }}
-                            </span>
-
-                            <strong>
-                                ${{ item.subtotal|floatformat:0 }}
-                            </strong>
-
-                        </div>
-
-                    {% endfor %}
-
-                </div>
-
-
-                {% if pedido.observacion %}
-
-                    <section class="customer-message-box">
-
-                        <div class="customer-message-title">
-
-                            <span>
-                                ✉
-                            </span>
-
-                            <strong>
-                                Mensaje del cliente
-                            </strong>
-
-                        </div>
-
-                        <p>
-                            {{ pedido.observacion }}
-                        </p>
-
-                    </section>
-
-                {% endif %}
-
-
-                <section class="order-tax-summary">
-
-                    <div>
-
-                        <span>
-                            Neto
-                        </span>
-
-                        <strong>
-                            ${{ pedido.monto_neto|floatformat:0 }}
-                        </strong>
-
-                    </div>
-
-
-                    <div>
-
-                        <span>
-                            IVA (19%)
-                        </span>
-
-                        <strong>
-                            ${{ pedido.monto_iva|floatformat:0 }}
-                        </strong>
-
-                    </div>
-
-
-                    <div class="total-row">
-
-                        <span>
-                            {{ pedido.creado_en|date:'d/m/Y H:i' }}
-                        </span>
-
-                        <strong>
-                            ${{ pedido.total|floatformat:0 }}
-                        </strong>
-
-                    </div>
-
-                </section>
-
+            <div class="cancelled-actions">
 
                 <form
                     method="post"
-                    action="{% url 'cambiar_estado_pedido' pedido.id %}"
-                    class="order-actions"
+                    action="{% url 'eliminar_todos_cancelados' %}"
+                    onsubmit="
+                        return confirm(
+                            '¿Eliminar definitivamente todos los pedidos cancelados?'
+                        );
+                    "
                 >
 
                     {% csrf_token %}
 
-                    <input
-                        type="hidden"
-                        name="next"
-                        value="{{ request.get_full_path }}"
+                    <button
+                        type="submit"
+                        class="delete-all-button"
                     >
-
-
-                    <select
-                        name="estado"
-                        aria-label="Cambiar estado del pedido {{ pedido.codigo_retiro }}"
-                    >
-
-                        {% for valor, nombre in estados_pedido %}
-
-                            <option
-                                value="{{ valor }}"
-                                {% if pedido.estado == valor %}
-                                    selected
-                                {% endif %}
-                            >
-                                {{ nombre }}
-                            </option>
-
-                        {% endfor %}
-
-                    </select>
-
-
-                    <button class="btn btn-primary">
-                        Actualizar
+                        Eliminar todos los cancelados
                     </button>
 
                 </form>
 
+            </div>
 
-                {% if pedido.estado == 'cancelado' %}
+        {% endif %}
 
-                    <div class="order-delete-row">
 
-                        <form
-                            method="post"
-                            action="{% url 'eliminar_pedido_cancelado' pedido.id %}"
-                            onsubmit="return confirm('¿Seguro que deseas eliminar definitivamente el pedido {{ pedido.codigo_retiro }}? Esta acción no se puede deshacer.');"
-                        >
+        <!-- =====================================================
+             PEDIDOS
+             ===================================================== -->
 
-                            {% csrf_token %}
+        <section class="orders-grid">
 
-                            <input
-                                type="hidden"
-                                name="next"
-                                value="{{ request.get_full_path }}"
+            {% for pedido in pedidos %}
+
+                <article class="order-card">
+
+                    <header class="order-card-header">
+
+                        <div>
+
+                            <span class="order-code">
+                                {{ pedido.codigo_retiro }}
+                            </span>
+
+                            <h2 class="order-client-name">
+                                {{ pedido.cliente_nombre }}
+                            </h2>
+
+                            <p class="order-client-phone">
+                                {{ pedido.cliente_telefono }}
+                            </p>
+
+                        </div>
+
+
+                        <span class="order-status {{ pedido.estado }}">
+                            {{ pedido.get_estado_display }}
+                        </span>
+
+                    </header>
+
+
+                    <div class="order-card-body">
+
+                        <div class="order-data-grid">
+
+                            <div class="order-data-item">
+
+                                <small>
+                                    Fecha
+                                </small>
+
+                                <strong>
+                                    {{ pedido.creado_en|date:'d/m/Y H:i' }}
+                                </strong>
+
+                            </div>
+
+
+                            <div class="order-data-item">
+
+                                <small>
+                                    Forma de pago
+                                </small>
+
+                                <strong>
+                                    {{ pedido.get_metodo_pago_display }}
+                                </strong>
+
+                            </div>
+
+
+                            <div class="order-data-item">
+
+                                <small>
+                                    Estado del pago
+                                </small>
+
+                                <strong>
+                                    {{ pedido.get_estado_pago_display }}
+                                </strong>
+
+                            </div>
+
+
+                            <div class="order-data-item">
+
+                                <small>
+                                    Documento
+                                </small>
+
+                                <strong>
+                                    {{ pedido.get_tipo_documento_display }}
+                                </strong>
+
+                            </div>
+
+                        </div>
+
+
+                        {% if pedido.observacion %}
+
+                            <div class="order-message">
+
+                                <strong>
+                                    Mensaje del cliente
+                                </strong>
+
+                                {{ pedido.observacion|linebreaksbr }}
+
+                            </div>
+
+                        {% endif %}
+
+
+                        <div class="order-items">
+
+                            {% for item in pedido.items.all %}
+
+                                <div class="order-item-row">
+
+                                    <span>
+                                        {{ item.cantidad }} ×
+                                        {{ item.producto.nombre }}
+                                    </span>
+
+                                    <strong>
+                                        ${{ item.subtotal|floatformat:0 }}
+                                    </strong>
+
+                                </div>
+
+                            {% empty %}
+
+                                <div class="order-item-row">
+                                    No hay productos asociados.
+                                </div>
+
+                            {% endfor %}
+
+                        </div>
+
+
+                        {% if pedido.tipo_documento == 'factura' %}
+
+                            <div class="order-message">
+
+                                <strong>
+                                    Datos de facturación
+                                </strong>
+
+                                RUT:
+                                {{ pedido.factura_rut|default:'No informado' }}
+
+                                <br>
+
+                                Razón social:
+                                {{ pedido.factura_razon_social|default:'No informada' }}
+
+                                <br>
+
+                                Giro:
+                                {{ pedido.factura_giro|default:'No informado' }}
+
+                                <br>
+
+                                Dirección:
+                                {{ pedido.factura_direccion|default:'No informada' }}
+
+                                <br>
+
+                                Correo:
+                                {{ pedido.factura_email|default:'No informado' }}
+
+                            </div>
+
+                        {% endif %}
+
+
+                        <div class="order-total">
+
+                            <span>
+                                Total
+                            </span>
+
+                            <strong>
+                                ${{ pedido.total|floatformat:0 }}
+                            </strong>
+
+                        </div>
+
+
+                        <div class="order-actions">
+
+                            <form
+                                method="post"
+                                action="{% url 'cambiar_estado_pedido' pedido.id %}"
+                                class="order-state-form"
                             >
 
+                                {% csrf_token %}
 
-                            <button
-                                type="submit"
-                                class="btn-delete-order"
-                            >
-                                🗑 Eliminar pedido
-                            </button>
+                                <div class="order-state-field">
 
-                        </form>
+                                    <label for="estado-pedido-{{ pedido.id }}">
+                                        Cambiar estado
+                                    </label>
+
+                                    <select
+                                        id="estado-pedido-{{ pedido.id }}"
+                                        name="estado"
+                                    >
+
+                                        <option
+                                            value="pendiente"
+                                            {% if pedido.estado == 'pendiente' %}
+                                                selected
+                                            {% endif %}
+                                        >
+                                            Pendiente
+                                        </option>
+
+                                        <option
+                                            value="listo"
+                                            {% if pedido.estado == 'listo' %}
+                                                selected
+                                            {% endif %}
+                                        >
+                                            Pedido listo
+                                        </option>
+
+                                        <option
+                                            value="entregado"
+                                            {% if pedido.estado == 'entregado' %}
+                                                selected
+                                            {% endif %}
+                                        >
+                                            Entregado
+                                        </option>
+
+                                        <option
+                                            value="cancelado"
+                                            {% if pedido.estado == 'cancelado' %}
+                                                selected
+                                            {% endif %}
+                                        >
+                                            Cancelado
+                                        </option>
+
+                                    </select>
+
+                                </div>
+
+
+                                <button
+                                    type="submit"
+                                    class="save-state-button"
+                                >
+                                    Guardar
+                                </button>
+
+                            </form>
+
+
+                            {% if pedido.estado == 'cancelado' %}
+
+                                <form
+                                    method="post"
+                                    action="{% url 'eliminar_pedido_cancelado' pedido.id %}"
+                                    onsubmit="
+                                        return confirm(
+                                            '¿Eliminar definitivamente el pedido {{ pedido.codigo_retiro|escapejs }}?'
+                                        );
+                                    "
+                                >
+
+                                    {% csrf_token %}
+
+                                    <input
+                                        type="hidden"
+                                        name="next"
+                                        value="{{ request.get_full_path }}"
+                                    >
+
+                                    <button
+                                        type="submit"
+                                        class="delete-order-button"
+                                    >
+                                        Eliminar
+                                    </button>
+
+                                </form>
+
+                            {% endif %}
+
+                        </div>
 
                     </div>
 
-                {% endif %}
+                </article>
 
-            </article>
+            {% empty %}
 
+                <div class="orders-empty">
 
-        {% empty %}
+                    <span>
+                        📭
+                    </span>
 
-            <div class="empty-state large">
+                    <h2>
+                        No hay pedidos para mostrar
+                    </h2>
 
-                <span>
-                    🧾
-                </span>
+                    <p>
+                        Cambia los filtros para revisar otros pedidos.
+                    </p>
 
-                <h2>
-                    No hay pedidos
-                </h2>
+                </div>
 
-                <p>
-                    No existen pedidos con los filtros seleccionados.
-                </p>
+            {% endfor %}
 
-            </div>
+        </section>
 
-        {% endfor %}
+    </main>
 
-    </section>
-
-</main>
+</div>
 
 {% endblock %}
