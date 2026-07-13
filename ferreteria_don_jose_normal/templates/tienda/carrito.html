@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load static %}
 
 {% block title %}
 Carrito | Ferretería Don José
@@ -6,6 +7,72 @@ Carrito | Ferretería Don José
 
 {% block body_class %}
 customer-body
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .automatic-quantity {
+        display: grid;
+        grid-template-columns: 42px 58px 42px;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .automatic-quantity button {
+        width: 42px;
+        height: 42px;
+        border: 1px solid #c9d4df;
+        border-radius: 10px;
+        background: #f5f8fb;
+        color: #173d70;
+        font-size: 1.3rem;
+        font-weight: 900;
+        cursor: pointer;
+    }
+
+    .automatic-quantity button:hover {
+        background: #173d70;
+        color: #ffffff;
+    }
+
+    .automatic-quantity button:disabled {
+        cursor: wait;
+        opacity: 0.55;
+    }
+
+    .automatic-quantity input {
+        width: 58px;
+        height: 42px;
+        padding: 6px;
+        border: 1px solid #c9d4df;
+        border-radius: 10px;
+        background: #ffffff;
+        text-align: center;
+        font-weight: 800;
+    }
+
+    .automatic-update-status {
+        grid-column: 1 / -1;
+        margin-top: 3px;
+        color: #53677a;
+        font-size: 0.76rem;
+        font-weight: 700;
+    }
+
+    .reserved-stock-message {
+        display: block;
+        margin-top: 7px;
+        color: #52687b;
+        font-size: 0.78rem;
+        line-height: 1.35;
+    }
+
+    .reserved-stock-message strong {
+        display: inline;
+        color: #173d70;
+        font-size: inherit;
+    }
+</style>
 {% endblock %}
 
 {% block content %}
@@ -71,6 +138,7 @@ customer-body
 
         <span>
             {{ carrito_cantidad }}
+
             {% if carrito_cantidad == 1 %}
                 producto
             {% else %}
@@ -85,17 +153,12 @@ customer-body
 
         <section class="cart-layout styled-cart-layout">
 
-            <!-- =====================================================
-                 PRODUCTOS RESERVADOS EN EL CARRITO
-                 ===================================================== -->
-
             <div class="cart-list">
 
                 {% for item in items %}
 
                     <article class="cart-item styled-cart-item">
 
-                        <!-- Imagen del producto -->
                         <div class="cart-icon">
 
                             {% if item.producto.imagen %}
@@ -128,7 +191,6 @@ customer-body
                         </div>
 
 
-                        <!-- Información del producto -->
                         <div class="cart-copy">
 
                             <small>
@@ -143,55 +205,77 @@ customer-body
                                 ${{ item.producto.precio|floatformat:0 }} c/u
                             </strong>
 
-                            <small class="muted">
-                                {{ item.cantidad }}
-                                {% if item.cantidad == 1 %}
-                                    unidad reservada.
-                                {% else %}
-                                    unidades reservadas.
-                                {% endif %}
+                            <span class="reserved-stock-message">
 
-                                Quedan {{ item.producto.stock }}
+                                <strong>
+                                    {{ item.cantidad }}
+                                </strong>
+
+                                unidad(es) reservada(s).
+
+                                <br>
+
+                                Quedan
+
+                                <strong>
+                                    {{ item.producto.stock }}
+                                </strong>
+
                                 disponibles para otros clientes.
-                            </small>
+
+                            </span>
 
                         </div>
 
 
-                        <!-- Controles de cantidad -->
                         <div class="cart-controls">
 
                             <form
                                 method="post"
                                 action="{% url 'actualizar_carrito' item.producto.id %}"
+                                class="automatic-quantity"
+                                data-auto-quantity-form
                             >
 
                                 {% csrf_token %}
 
-                                <label
-                                    for="cantidad-{{ item.producto.id }}"
-                                    class="sr-only"
+                                <button
+                                    type="button"
+                                    data-quantity-decrease
+                                    aria-label="Disminuir cantidad de {{ item.producto.nombre }}"
                                 >
-                                    Cantidad de {{ item.producto.nombre }}
-                                </label>
+                                    −
+                                </button>
 
                                 <input
-                                    id="cantidad-{{ item.producto.id }}"
                                     type="number"
                                     name="cantidad"
-                                    min="1"
+                                    min="0"
                                     max="{{ item.max_cantidad }}"
                                     value="{{ item.cantidad }}"
                                     inputmode="numeric"
+                                    data-quantity-input
                                     aria-label="Cantidad de {{ item.producto.nombre }}"
                                 >
 
                                 <button
-                                    type="submit"
-                                    class="mini-button"
+                                    type="button"
+                                    data-quantity-increase
+                                    aria-label="Aumentar cantidad de {{ item.producto.nombre }}"
+                                    {% if item.producto.stock <= 0 %}
+                                        disabled
+                                    {% endif %}
                                 >
-                                    Actualizar
+                                    +
                                 </button>
+
+                                <small
+                                    class="automatic-update-status"
+                                    data-auto-status
+                                    hidden
+                                >
+                                    Actualizando stock…
+                                </small>
 
                             </form>
 
@@ -199,7 +283,7 @@ customer-body
                             <form
                                 method="post"
                                 action="{% url 'eliminar_carrito' item.producto.id %}"
-                                onsubmit="return confirm('¿Deseas eliminar {{ item.producto.nombre|escapejs }} del carrito? Las unidades reservadas volverán al stock.');"
+                                onsubmit="return confirm('¿Eliminar {{ item.producto.nombre|escapejs }} del carrito? Sus unidades volverán al stock.');"
                             >
 
                                 {% csrf_token %}
@@ -216,7 +300,6 @@ customer-body
                         </div>
 
 
-                        <!-- Subtotal -->
                         <div class="cart-subtotal">
 
                             <small>
@@ -236,10 +319,6 @@ customer-body
             </div>
 
 
-            <!-- =====================================================
-                 FINALIZAR PEDIDO
-                 ===================================================== -->
-
             <aside class="checkout-card styled-checkout-card">
 
                 <p class="eyebrow">
@@ -251,9 +330,9 @@ customer-body
                 </h2>
 
                 <p class="muted">
-                    Los productos de este carrito ya se encuentran
-                    reservados. Si eliminas alguno, sus unidades
-                    volverán automáticamente al stock.
+                    Los productos ya se encuentran reservados.
+                    Al disminuir la cantidad o eliminarlos,
+                    el stock se repone automáticamente.
                 </p>
 
 
@@ -272,7 +351,6 @@ customer-body
                             </strong>
 
                             <small>
-                                Puedes continuar directamente.
                                 Iniciar sesión es opcional.
                             </small>
 
@@ -299,8 +377,6 @@ customer-body
                     {{ form.non_field_errors }}
 
 
-                    <!-- Datos del cliente -->
-
                     <label>
 
                         {{ form.cliente_nombre.label }}
@@ -322,10 +398,6 @@ customer-body
 
                     </label>
 
-
-                    <!-- =====================================================
-                         BOLETA O FACTURA
-                         ===================================================== -->
 
                     <fieldset class="payment-fieldset document-fieldset">
 
@@ -401,8 +473,6 @@ customer-body
                     </fieldset>
 
 
-                    <!-- Datos de factura -->
-
                     <section
                         class="invoice-fields
                         {% if form.tipo_documento.value != 'factura' %}
@@ -424,8 +494,7 @@ customer-body
                                 </strong>
 
                                 <small>
-                                    Completa la información tributaria
-                                    de la empresa.
+                                    Completa la información tributaria.
                                 </small>
 
                             </span>
@@ -434,65 +503,41 @@ customer-body
 
 
                         <label>
-
                             {{ form.factura_rut.label }}
-
                             {{ form.factura_rut }}
-
                             {{ form.factura_rut.errors }}
-
                         </label>
 
 
                         <label>
-
                             {{ form.factura_razon_social.label }}
-
                             {{ form.factura_razon_social }}
-
                             {{ form.factura_razon_social.errors }}
-
                         </label>
 
 
                         <label>
-
                             {{ form.factura_giro.label }}
-
                             {{ form.factura_giro }}
-
                             {{ form.factura_giro.errors }}
-
                         </label>
 
 
                         <label>
-
                             {{ form.factura_direccion.label }}
-
                             {{ form.factura_direccion }}
-
                             {{ form.factura_direccion.errors }}
-
                         </label>
 
 
                         <label>
-
                             {{ form.factura_email.label }}
-
                             {{ form.factura_email }}
-
                             {{ form.factura_email.errors }}
-
                         </label>
 
                     </section>
 
-
-                    <!-- =====================================================
-                         FORMA DE PAGO
-                         ===================================================== -->
 
                     <fieldset class="payment-fieldset">
 
@@ -524,7 +569,7 @@ customer-body
                                     </strong>
 
                                     <small>
-                                        Pagas directamente en la tienda.
+                                        Pagas en la tienda.
                                     </small>
 
                                 </span>
@@ -568,8 +613,6 @@ customer-body
                     </fieldset>
 
 
-                    <!-- Datos de tarjeta -->
-
                     <section
                         class="card-payment-fields
                         {% if form.metodo_pago.value != 'tarjeta' %}
@@ -591,8 +634,7 @@ customer-body
                                 </strong>
 
                                 <small>
-                                    El sistema no guarda el número completo
-                                    ni el CVV.
+                                    No se guarda el número completo ni el CVV.
                                 </small>
 
                             </span>
@@ -601,13 +643,9 @@ customer-body
 
 
                         <label>
-
                             {{ form.titular_tarjeta.label }}
-
                             {{ form.titular_tarjeta }}
-
                             {{ form.titular_tarjeta.errors }}
-
                         </label>
 
 
@@ -621,7 +659,6 @@ customer-body
 
                                 <span
                                     class="card-brand-badge is-empty"
-                                    id="card-brand-status"
                                     data-card-brand
                                     aria-live="polite"
                                 >
@@ -630,17 +667,11 @@ customer-body
 
                             </div>
 
-
                             {{ form.numero_tarjeta }}
 
-
-                            <small
-                                class="card-number-help"
-                                id="card-number-help"
-                            >
-                                Solo números. Mínimo 13 y máximo 19 dígitos.
+                            <small class="card-number-help">
+                                Solo números. Entre 13 y 19 dígitos.
                             </small>
-
 
                             {{ form.numero_tarjeta.errors }}
 
@@ -650,52 +681,34 @@ customer-body
                         <div class="card-fields-row">
 
                             <label>
-
                                 {{ form.vencimiento_tarjeta.label }}
-
                                 {{ form.vencimiento_tarjeta }}
-
                                 {{ form.vencimiento_tarjeta.errors }}
-
                             </label>
 
 
                             <label>
-
                                 {{ form.cvv_tarjeta.label }}
-
                                 {{ form.cvv_tarjeta }}
-
                                 {{ form.cvv_tarjeta.errors }}
-
                             </label>
 
                         </div>
 
 
                         <p class="demo-payment-warning">
-                            Modo demostración: no realiza un cobro bancario real.
+                            Modo demostración: no realiza un cobro real.
                         </p>
 
                     </section>
 
 
-                    <!-- Observación -->
-
                     <label>
-
                         {{ form.observacion.label }}
-
                         {{ form.observacion }}
-
                         {{ form.observacion.errors }}
-
                     </label>
 
-
-                    <!-- =====================================================
-                         DESGLOSE DEL IVA
-                         ===================================================== -->
 
                     <section
                         class="tax-summary"
@@ -770,10 +783,6 @@ customer-body
 
     {% else %}
 
-        <!-- =====================================================
-             CARRITO VACÍO
-             ===================================================== -->
-
         <section class="empty-state large">
 
             <span>
@@ -785,7 +794,7 @@ customer-body
             </h2>
 
             <p>
-                Agrega productos desde el catálogo para realizar una compra.
+                Agrega productos desde el catálogo.
             </p>
 
             <a
@@ -800,5 +809,10 @@ customer-body
     {% endif %}
 
 </main>
+
+
+<script
+    src="{% static 'js/carrito_auto.js' %}?v=20260713-1"
+></script>
 
 {% endblock %}
