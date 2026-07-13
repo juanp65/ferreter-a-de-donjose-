@@ -12,7 +12,7 @@ from .models import ItemPedido, Pedido, Producto
 
 def _desglosar_iva(total):
     """
-    Calcula el neto y el IVA incluido dentro del total.
+    Calcula el neto y el IVA incluido en el total.
     """
 
     total = Decimal(total or 0)
@@ -31,7 +31,7 @@ def _desglosar_iva(total):
 
 def _carrito_sesion(request):
     """
-    Obtiene el carrito y elimina datos dañados o cantidades inválidas.
+    Obtiene el carrito y elimina valores inválidos.
     """
 
     carrito = request.session.get(
@@ -42,6 +42,7 @@ def _carrito_sesion(request):
     carrito_limpio = {}
 
     for producto_id, cantidad in carrito.items():
+
         try:
             producto_id = str(
                 int(producto_id)
@@ -58,6 +59,7 @@ def _carrito_sesion(request):
             ] = cantidad
 
     if carrito_limpio != carrito:
+
         request.session[
             "carrito"
         ] = carrito_limpio
@@ -69,19 +71,20 @@ def _carrito_sesion(request):
 
 def _items_carrito(request):
     """
-    Construye la lista de productos reservados en el carrito.
+    Construye los productos reservados en el carrito.
 
-    producto.stock representa las unidades que todavía están disponibles.
-    cantidad representa las unidades que este cliente ya reservó.
+    producto.stock:
+        unidades que continúan disponibles.
+
+    cantidad:
+        unidades reservadas por este carrito.
     """
 
     carrito = _carrito_sesion(request)
 
     productos = (
         Producto.objects
-        .filter(
-            id__in=carrito.keys()
-        )
+        .filter(id__in=carrito.keys())
         .select_related("categoria")
     )
 
@@ -94,6 +97,7 @@ def _items_carrito(request):
     total = Decimal("0")
 
     for producto_id, cantidad in carrito.items():
+
         producto = productos_por_id.get(
             producto_id
         )
@@ -111,7 +115,7 @@ def _items_carrito(request):
                 "cantidad": cantidad,
 
                 # Cantidad reservada actualmente
-                # más las unidades todavía libres.
+                # más las unidades todavía disponibles.
                 "max_cantidad": (
                     cantidad + producto.stock
                 ),
@@ -129,8 +133,8 @@ def _items_carrito(request):
 @transaction.atomic
 def agregar_carrito(request, producto_id):
     """
-    Agrega una unidad al carrito y la descuenta inmediatamente
-    del stock disponible.
+    Agrega una unidad al carrito y la descuenta
+    inmediatamente del stock.
     """
 
     producto = get_object_or_404(
@@ -140,9 +144,10 @@ def agregar_carrito(request, producto_id):
     )
 
     if producto.stock <= 0:
+
         messages.error(
             request,
-            "Este producto no tiene stock disponible.",
+            "Este producto ya no tiene stock disponible.",
         )
 
         return redirect(
@@ -150,7 +155,7 @@ def agregar_carrito(request, producto_id):
             or "catalogo"
         )
 
-    # Reserva una unidad.
+    # Se reserva una unidad inmediatamente.
     producto.stock -= 1
 
     producto.save(
@@ -182,7 +187,7 @@ def agregar_carrito(request, producto_id):
         request,
         (
             f"{producto.nombre} fue agregado "
-            "y quedó reservado en tu carrito."
+            "y quedó reservado."
         ),
     )
 
@@ -194,7 +199,7 @@ def agregar_carrito(request, producto_id):
 
 def carrito(request):
     """
-    Muestra los productos reservados y el formulario del pedido.
+    Muestra el carrito y el formulario del pedido.
     """
 
     items, total = _items_carrito(
@@ -208,15 +213,16 @@ def carrito(request):
     inicial = {}
 
     if request.user.is_authenticated:
+
         inicial["cliente_nombre"] = (
             request.user.get_full_name()
             or request.user.first_name
             or request.user.username
         )
 
-        inicial[
-            "factura_email"
-        ] = request.user.email
+        inicial["factura_email"] = (
+            request.user.email
+        )
 
     return render(
         request,
@@ -237,19 +243,21 @@ def carrito(request):
 @transaction.atomic
 def actualizar_carrito(request, producto_id):
     """
-    Actualiza la cantidad reservada.
+    Actualiza automáticamente la cantidad reservada.
 
     Si aumenta:
-    - descuenta la diferencia del inventario.
+        descuenta la diferencia.
 
     Si disminuye:
-    - devuelve la diferencia al inventario.
+        devuelve la diferencia.
+
+    Si llega a cero:
+        elimina el producto y devuelve todo.
     """
 
     producto = get_object_or_404(
         Producto.objects.select_for_update(),
         pk=producto_id,
-        activo=True,
     )
 
     carrito = _carrito_sesion(
@@ -261,6 +269,17 @@ def actualizar_carrito(request, producto_id):
     cantidad_actual = int(
         carrito.get(clave, 0)
     )
+
+    if cantidad_actual <= 0:
+
+        messages.error(
+            request,
+            "El producto ya no está en el carrito.",
+        )
+
+        return redirect(
+            "carrito"
+        )
 
     try:
         cantidad_nueva = int(
@@ -283,8 +302,11 @@ def actualizar_carrito(request, producto_id):
         - cantidad_actual
     )
 
+    # El cliente quiere aumentar la cantidad.
     if diferencia > 0:
+
         if producto.stock < diferencia:
+
             messages.error(
                 request,
                 (
@@ -307,13 +329,15 @@ def actualizar_carrito(request, producto_id):
             ]
         )
 
+    # El cliente quiere disminuir la cantidad.
     elif diferencia < 0:
-        unidades_a_reponer = abs(
+
+        unidades_a_devolver = abs(
             diferencia
         )
 
         producto.stock += (
-            unidades_a_reponer
+            unidades_a_devolver
         )
 
         producto.save(
@@ -323,7 +347,9 @@ def actualizar_carrito(request, producto_id):
             ]
         )
 
+    # Si llega a cero, se elimina del carrito.
     if cantidad_nueva == 0:
+
         carrito.pop(
             clave,
             None,
@@ -333,22 +359,15 @@ def actualizar_carrito(request, producto_id):
             request,
             (
                 f"{producto.nombre} fue eliminado "
-                "del carrito y el stock fue repuesto."
+                "y el stock fue repuesto."
             ),
         )
 
     else:
+
         carrito[
             clave
         ] = cantidad_nueva
-
-        messages.success(
-            request,
-            (
-                f"Cantidad de {producto.nombre} "
-                "actualizada."
-            ),
-        )
 
     request.session[
         "carrito"
@@ -365,8 +384,8 @@ def actualizar_carrito(request, producto_id):
 @transaction.atomic
 def eliminar_carrito(request, producto_id):
     """
-    Elimina completamente el producto del carrito y devuelve
-    todas las unidades reservadas al stock.
+    Elimina el producto y devuelve automáticamente
+    todas sus unidades al stock.
     """
 
     producto = get_object_or_404(
@@ -385,6 +404,7 @@ def eliminar_carrito(request, producto_id):
     )
 
     if cantidad > 0:
+
         producto.stock += cantidad
 
         producto.save(
@@ -397,9 +417,9 @@ def eliminar_carrito(request, producto_id):
         messages.success(
             request,
             (
-                f"{producto.nombre} fue eliminado "
-                f"del carrito y se repusieron "
-                f"{cantidad} unidad(es)."
+                f"{producto.nombre} fue eliminado. "
+                f"Se devolvieron {cantidad} "
+                "unidad(es) al stock."
             ),
         )
 
@@ -420,8 +440,8 @@ def crear_pedido(request):
     """
     Convierte la reserva del carrito en un pedido.
 
-    El stock ya fue descontado al agregar los productos,
-    por lo que el pedido se crea con stock_descontado=True.
+    El stock ya fue descontado cuando los productos
+    fueron agregados, por lo que no se vuelve a descontar.
     """
 
     items, total = _items_carrito(
@@ -433,6 +453,7 @@ def crear_pedido(request):
     )
 
     if not items:
+
         messages.error(
             request,
             "El carrito está vacío.",
@@ -443,6 +464,7 @@ def crear_pedido(request):
         )
 
     if not form.is_valid():
+
         neto, iva = _desglosar_iva(
             total
         )
@@ -495,6 +517,8 @@ def crear_pedido(request):
                 "",
             )
         ),
+
+        estado="pendiente",
 
         metodo_pago=metodo_pago,
 
@@ -559,7 +583,7 @@ def crear_pedido(request):
 
         total=total,
 
-        # El stock fue descontado al agregar al carrito.
+        # El inventario ya fue reservado.
         stock_descontado=True,
     )
 
@@ -582,7 +606,7 @@ def crear_pedido(request):
     )
 
     # Se limpia el carrito sin devolver stock,
-    # porque la reserva ahora pertenece al pedido.
+    # porque ahora pertenece al pedido.
     request.session[
         "carrito"
     ] = {}
