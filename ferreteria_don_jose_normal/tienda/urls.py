@@ -2,13 +2,14 @@ from django.contrib.auth import views as auth_views
 from django.urls import path
 
 from . import views
+from . import views_carrito
 from . import views_pedidos
 from . import views_stock
 
 
 urlpatterns = [
     # =====================================================
-    # TIENDA Y CATÁLOGO
+    # CATÁLOGO
     # =====================================================
 
     path(
@@ -18,30 +19,30 @@ urlpatterns = [
     ),
 
     # =====================================================
-    # CARRITO
+    # CARRITO CON RESERVA DE STOCK
     # =====================================================
 
     path(
         "carrito/",
-        views.carrito,
+        views_carrito.carrito,
         name="carrito",
     ),
 
     path(
         "carrito/agregar/<int:producto_id>/",
-        views.agregar_carrito,
+        views_carrito.agregar_carrito,
         name="agregar_carrito",
     ),
 
     path(
         "carrito/actualizar/<int:producto_id>/",
-        views.actualizar_carrito,
+        views_carrito.actualizar_carrito,
         name="actualizar_carrito",
     ),
 
     path(
         "carrito/eliminar/<int:producto_id>/",
-        views.eliminar_carrito,
+        views_carrito.eliminar_carrito,
         name="eliminar_carrito",
     ),
 
@@ -51,7 +52,7 @@ urlpatterns = [
 
     path(
         "pedido/crear/",
-        views.crear_pedido,
+        views_carrito.crear_pedido,
         name="crear_pedido",
     ),
 
@@ -62,7 +63,7 @@ urlpatterns = [
     ),
 
     # =====================================================
-    # AUTENTICACIÓN
+    # INICIO DE SESIÓN
     # =====================================================
 
     path(
@@ -90,7 +91,7 @@ urlpatterns = [
     ),
 
     # =====================================================
-    # PANEL ADMINISTRATIVO
+    # PANEL DON JOSÉ
     # =====================================================
 
     path(
@@ -128,7 +129,7 @@ urlpatterns = [
     ),
 
     # =====================================================
-    # GESTIÓN DE PEDIDOS
+    # PEDIDOS DEL PANEL
     # =====================================================
 
     path(
@@ -143,7 +144,6 @@ urlpatterns = [
         name="cambiar_estado_pedido",
     ),
 
-    # Estas funciones están en views_pedidos.py
     path(
         "panel/pedidos/<int:pedido_id>/eliminar/",
         views_pedidos.eliminar_pedido_cancelado,
