@@ -1,157 +1,804 @@
 {% extends 'base.html' %}
-{% block title %}Carrito | Ferretería Don José{% endblock %}
-{% block body_class %}customer-body{% endblock %}
+
+{% block title %}
+Carrito | Ferretería Don José
+{% endblock %}
+
+{% block body_class %}
+customer-body
+{% endblock %}
+
 {% block content %}
+
 <header class="mobile-header store-header">
-    <a class="icon-button" href="{% url 'catalogo' %}" aria-label="Volver al catálogo">←</a>
-    <a class="customer-brand" href="{% url 'catalogo' %}"><span>🛒</span> Tu compra</a>
+
+    <a
+        class="icon-button"
+        href="{% url 'catalogo' %}"
+        aria-label="Volver al catálogo"
+    >
+        ←
+    </a>
+
+    <a
+        class="customer-brand"
+        href="{% url 'catalogo' %}"
+    >
+        <span>🛒</span>
+        Tu compra
+    </a>
+
     {% if user.is_authenticated %}
-    <a class="icon-button" href="{% url 'cuenta' %}" aria-label="Mi cuenta">👤</a>
+
+        <a
+            class="icon-button"
+            href="{% url 'cuenta' %}"
+            aria-label="Mi cuenta"
+        >
+            👤
+        </a>
+
     {% else %}
-    <a class="icon-button" href="{% url 'login' %}?next={% url 'carrito' %}" aria-label="Iniciar sesión">🔐</a>
+
+        <a
+            class="icon-button"
+            href="{% url 'login' %}?next={% url 'carrito' %}"
+            aria-label="Iniciar sesión"
+        >
+            🔐
+        </a>
+
     {% endif %}
+
 </header>
 
-<main class="customer-shell storefront-shell cart-page styled-cart-page">
-    <div class="section-heading storefront-heading cart-page-heading">
-        <div><p class="eyebrow">Resumen</p><h1>Carrito de compra</h1></div>
-        <span>{{ carrito_cantidad }} productos</span>
-    </div>
 
-    {% if items %}
-    <section class="cart-layout styled-cart-layout">
-        <div class="cart-list">
-            {% for item in items %}
-            <article class="cart-item styled-cart-item">
-                <div class="cart-icon">{% if item.producto.imagen %}<img src="{{ item.producto.imagen.url }}" alt="{{ item.producto.nombre }}">{% else %}<span class="product-photo-placeholder">Sin foto</span>{% endif %}</div>
-                <div class="cart-copy">
-                    <small>{{ item.producto.categoria.nombre }}</small>
-                    <h3>{{ item.producto.nombre }}</h3>
-                    <strong>${{ item.producto.precio|floatformat:0 }} c/u</strong>
-                </div>
-                <div class="cart-controls">
-                    <form method="post" action="{% url 'actualizar_carrito' item.producto.id %}">
-                        {% csrf_token %}
-                        <input type="number" min="1" max="{{ item.producto.stock }}" name="cantidad" value="{{ item.cantidad }}" aria-label="Cantidad de {{ item.producto.nombre }}">
-                        <button class="mini-button">Actualizar</button>
-                    </form>
-                    <form method="post" action="{% url 'eliminar_carrito' item.producto.id %}">
-                        {% csrf_token %}
-                        <button class="text-danger">Eliminar</button>
-                    </form>
-                </div>
-                <div class="cart-subtotal">${{ item.subtotal|floatformat:0 }}</div>
-            </article>
-            {% endfor %}
+<main class="customer-shell storefront-shell cart-page styled-cart-page">
+
+    <div class="section-heading storefront-heading cart-page-heading">
+
+        <div>
+
+            <p class="eyebrow">
+                Resumen
+            </p>
+
+            <h1>
+                Carrito de compra
+            </h1>
+
         </div>
 
-        <aside class="checkout-card styled-checkout-card">
-            <p class="eyebrow">Retiro en tienda</p>
-            <h2>Completa tu pedido</h2>
-            <p class="muted">No necesitas iniciar sesión. Al finalizar recibirás un código único para retirar tu compra.</p>
-
-            {% if not user.is_authenticated %}
-            <div class="guest-checkout-note">
-                <span>✓</span>
-                <div>
-                    <strong>Compra como invitado</strong>
-                    <small>Puedes continuar directamente. Iniciar sesión es opcional.</small>
-                </div>
-                <a href="{% url 'login' %}?next={% url 'carrito' %}">Ingresar</a>
-            </div>
+        <span>
+            {{ carrito_cantidad }}
+            {% if carrito_cantidad == 1 %}
+                producto
+            {% else %}
+                productos
             {% endif %}
+        </span>
 
-            <form method="post" action="{% url 'crear_pedido' %}" class="stack-form checkout-form" novalidate>
-                {% csrf_token %}
-                {{ form.non_field_errors }}
+    </div>
 
-                <label>{{ form.cliente_nombre.label }} {{ form.cliente_nombre }} {{ form.cliente_nombre.errors }}</label>
-                <label>{{ form.cliente_telefono.label }} {{ form.cliente_telefono }} {{ form.cliente_telefono.errors }}</label>
 
-                <fieldset class="payment-fieldset document-fieldset">
-                    <legend>Documento tributario</legend>
-                    <div class="payment-options document-options">
-                        <label class="payment-option">
-                            <input type="radio" name="tipo_documento" value="boleta" {% if form.tipo_documento.value != 'factura' %}checked{% endif %}>
-                            <span class="payment-icon">🧾</span>
-                            <span><strong>Boleta</strong><small>Para compra personal.</small></span>
-                        </label>
-                        <label class="payment-option">
-                            <input type="radio" name="tipo_documento" value="factura" {% if form.tipo_documento.value == 'factura' %}checked{% endif %}>
-                            <span class="payment-icon">📄</span>
-                            <span><strong>Factura</strong><small>Solicita datos de la empresa.</small></span>
-                        </label>
-                    </div>
-                    {{ form.tipo_documento.errors }}
-                </fieldset>
+    {% if items %}
 
-                <section class="invoice-fields {% if form.tipo_documento.value != 'factura' %}is-hidden{% endif %}" data-invoice-fields>
-                    <div class="secure-payment-note invoice-note">
-                        <span>🏢</span>
-                        <span><strong>Datos para factura</strong><small>Completa la información tributaria de la empresa.</small></span>
-                    </div>
-                    <label>{{ form.factura_rut.label }} {{ form.factura_rut }} {{ form.factura_rut.errors }}</label>
-                    <label>{{ form.factura_razon_social.label }} {{ form.factura_razon_social }} {{ form.factura_razon_social.errors }}</label>
-                    <label>{{ form.factura_giro.label }} {{ form.factura_giro }} {{ form.factura_giro.errors }}</label>
-                    <label>{{ form.factura_direccion.label }} {{ form.factura_direccion }} {{ form.factura_direccion.errors }}</label>
-                    <label>{{ form.factura_email.label }} {{ form.factura_email }} {{ form.factura_email.errors }}</label>
-                </section>
+        <section class="cart-layout styled-cart-layout">
 
-                <fieldset class="payment-fieldset">
-                    <legend>Forma de pago</legend>
-                    <div class="payment-options">
-                        <label class="payment-option">
-                            <input type="radio" name="metodo_pago" value="tienda" {% if form.metodo_pago.value != 'tarjeta' %}checked{% endif %}>
-                            <span class="payment-icon">🏪</span>
-                            <span><strong>Pagar al retirar</strong><small>Pagas directamente en la tienda.</small></span>
-                        </label>
-                        <label class="payment-option">
-                            <input type="radio" name="metodo_pago" value="tarjeta" {% if form.metodo_pago.value == 'tarjeta' %}checked{% endif %}>
-                            <span class="payment-icon">💳</span>
-                            <span><strong>Pagar con tarjeta</strong><small>Pago inmediato en el prototipo.</small></span>
-                        </label>
-                    </div>
-                    {{ form.metodo_pago.errors }}
-                </fieldset>
+            <!-- =====================================================
+                 PRODUCTOS RESERVADOS EN EL CARRITO
+                 ===================================================== -->
 
-                <section class="card-payment-fields {% if form.metodo_pago.value != 'tarjeta' %}is-hidden{% endif %}" data-card-fields>
-                    <div class="secure-payment-note"><span>🔒</span><span><strong>Datos protegidos</strong><small>El sistema no guarda el número completo ni el CVV.</small></span></div>
-                    <label>{{ form.titular_tarjeta.label }} {{ form.titular_tarjeta }} {{ form.titular_tarjeta.errors }}</label>
-                    <div class="card-number-control">
-                        <div class="card-number-label-row">
-                            <label for="{{ form.numero_tarjeta.id_for_label }}">{{ form.numero_tarjeta.label }}</label>
-                            <span class="card-brand-badge is-empty" id="card-brand-status" data-card-brand aria-live="polite">Sin detectar</span>
+            <div class="cart-list">
+
+                {% for item in items %}
+
+                    <article class="cart-item styled-cart-item">
+
+                        <!-- Imagen del producto -->
+                        <div class="cart-icon">
+
+                            {% if item.producto.imagen %}
+
+                                <img
+                                    src="{{ item.producto.imagen.url }}"
+                                    alt="{{ item.producto.nombre }}"
+                                    loading="lazy"
+                                    onerror="
+                                        this.hidden = true;
+                                        this.nextElementSibling.hidden = false;
+                                    "
+                                >
+
+                                <span
+                                    class="product-photo-placeholder"
+                                    hidden
+                                >
+                                    Sin foto
+                                </span>
+
+                            {% else %}
+
+                                <span class="product-photo-placeholder">
+                                    Sin foto
+                                </span>
+
+                            {% endif %}
+
                         </div>
-                        {{ form.numero_tarjeta }}
-                        <small class="card-number-help" id="card-number-help">Solo números. Mínimo 13 y máximo 19 dígitos.</small>
-                        {{ form.numero_tarjeta.errors }}
-                    </div>
-                    <div class="card-fields-row">
-                        <label>{{ form.vencimiento_tarjeta.label }} {{ form.vencimiento_tarjeta }} {{ form.vencimiento_tarjeta.errors }}</label>
-                        <label>{{ form.cvv_tarjeta.label }} {{ form.cvv_tarjeta }} {{ form.cvv_tarjeta.errors }}</label>
-                    </div>
-                    <p class="demo-payment-warning">Modo demostración: no realiza un cobro bancario real.</p>
-                </section>
 
-                <label>{{ form.observacion.label }} {{ form.observacion }} {{ form.observacion.errors }}</label>
-                <section class="tax-summary" aria-label="Desglose del total">
-                    <div><span>Neto</span><strong>${{ neto|floatformat:0 }}</strong></div>
-                    <div><span>IVA (19%)</span><strong>${{ iva|floatformat:0 }}</strong></div>
-                    <div class="total-row"><span>Total con IVA</span><strong>${{ total|floatformat:0 }}</strong></div>
-                </section>
-                <button class="btn btn-primary btn-block" data-submit-order>
-                    {% if form.metodo_pago.value == 'tarjeta' %}Pagar y generar pedido{% else %}Generar pedido para retiro{% endif %}
-                </button>
-            </form>
-        </aside>
-    </section>
+
+                        <!-- Información del producto -->
+                        <div class="cart-copy">
+
+                            <small>
+                                {{ item.producto.categoria.nombre }}
+                            </small>
+
+                            <h3>
+                                {{ item.producto.nombre }}
+                            </h3>
+
+                            <strong>
+                                ${{ item.producto.precio|floatformat:0 }} c/u
+                            </strong>
+
+                            <small class="muted">
+                                {{ item.cantidad }}
+                                {% if item.cantidad == 1 %}
+                                    unidad reservada.
+                                {% else %}
+                                    unidades reservadas.
+                                {% endif %}
+
+                                Quedan {{ item.producto.stock }}
+                                disponibles para otros clientes.
+                            </small>
+
+                        </div>
+
+
+                        <!-- Controles de cantidad -->
+                        <div class="cart-controls">
+
+                            <form
+                                method="post"
+                                action="{% url 'actualizar_carrito' item.producto.id %}"
+                            >
+
+                                {% csrf_token %}
+
+                                <label
+                                    for="cantidad-{{ item.producto.id }}"
+                                    class="sr-only"
+                                >
+                                    Cantidad de {{ item.producto.nombre }}
+                                </label>
+
+                                <input
+                                    id="cantidad-{{ item.producto.id }}"
+                                    type="number"
+                                    name="cantidad"
+                                    min="1"
+                                    max="{{ item.max_cantidad }}"
+                                    value="{{ item.cantidad }}"
+                                    inputmode="numeric"
+                                    aria-label="Cantidad de {{ item.producto.nombre }}"
+                                >
+
+                                <button
+                                    type="submit"
+                                    class="mini-button"
+                                >
+                                    Actualizar
+                                </button>
+
+                            </form>
+
+
+                            <form
+                                method="post"
+                                action="{% url 'eliminar_carrito' item.producto.id %}"
+                                onsubmit="return confirm('¿Deseas eliminar {{ item.producto.nombre|escapejs }} del carrito? Las unidades reservadas volverán al stock.');"
+                            >
+
+                                {% csrf_token %}
+
+                                <button
+                                    type="submit"
+                                    class="text-danger"
+                                >
+                                    Eliminar
+                                </button>
+
+                            </form>
+
+                        </div>
+
+
+                        <!-- Subtotal -->
+                        <div class="cart-subtotal">
+
+                            <small>
+                                Subtotal
+                            </small>
+
+                            <strong>
+                                ${{ item.subtotal|floatformat:0 }}
+                            </strong>
+
+                        </div>
+
+                    </article>
+
+                {% endfor %}
+
+            </div>
+
+
+            <!-- =====================================================
+                 FINALIZAR PEDIDO
+                 ===================================================== -->
+
+            <aside class="checkout-card styled-checkout-card">
+
+                <p class="eyebrow">
+                    Retiro en tienda
+                </p>
+
+                <h2>
+                    Completa tu pedido
+                </h2>
+
+                <p class="muted">
+                    Los productos de este carrito ya se encuentran
+                    reservados. Si eliminas alguno, sus unidades
+                    volverán automáticamente al stock.
+                </p>
+
+
+                {% if not user.is_authenticated %}
+
+                    <div class="guest-checkout-note">
+
+                        <span>
+                            ✓
+                        </span>
+
+                        <div>
+
+                            <strong>
+                                Compra como invitado
+                            </strong>
+
+                            <small>
+                                Puedes continuar directamente.
+                                Iniciar sesión es opcional.
+                            </small>
+
+                        </div>
+
+                        <a href="{% url 'login' %}?next={% url 'carrito' %}">
+                            Ingresar
+                        </a>
+
+                    </div>
+
+                {% endif %}
+
+
+                <form
+                    method="post"
+                    action="{% url 'crear_pedido' %}"
+                    class="stack-form checkout-form"
+                    novalidate
+                >
+
+                    {% csrf_token %}
+
+                    {{ form.non_field_errors }}
+
+
+                    <!-- Datos del cliente -->
+
+                    <label>
+
+                        {{ form.cliente_nombre.label }}
+
+                        {{ form.cliente_nombre }}
+
+                        {{ form.cliente_nombre.errors }}
+
+                    </label>
+
+
+                    <label>
+
+                        {{ form.cliente_telefono.label }}
+
+                        {{ form.cliente_telefono }}
+
+                        {{ form.cliente_telefono.errors }}
+
+                    </label>
+
+
+                    <!-- =====================================================
+                         BOLETA O FACTURA
+                         ===================================================== -->
+
+                    <fieldset class="payment-fieldset document-fieldset">
+
+                        <legend>
+                            Documento tributario
+                        </legend>
+
+                        <div class="payment-options document-options">
+
+                            <label class="payment-option">
+
+                                <input
+                                    type="radio"
+                                    name="tipo_documento"
+                                    value="boleta"
+                                    {% if form.tipo_documento.value != 'factura' %}
+                                        checked
+                                    {% endif %}
+                                >
+
+                                <span class="payment-icon">
+                                    🧾
+                                </span>
+
+                                <span>
+
+                                    <strong>
+                                        Boleta
+                                    </strong>
+
+                                    <small>
+                                        Para compra personal.
+                                    </small>
+
+                                </span>
+
+                            </label>
+
+
+                            <label class="payment-option">
+
+                                <input
+                                    type="radio"
+                                    name="tipo_documento"
+                                    value="factura"
+                                    {% if form.tipo_documento.value == 'factura' %}
+                                        checked
+                                    {% endif %}
+                                >
+
+                                <span class="payment-icon">
+                                    📄
+                                </span>
+
+                                <span>
+
+                                    <strong>
+                                        Factura
+                                    </strong>
+
+                                    <small>
+                                        Solicita datos de la empresa.
+                                    </small>
+
+                                </span>
+
+                            </label>
+
+                        </div>
+
+                        {{ form.tipo_documento.errors }}
+
+                    </fieldset>
+
+
+                    <!-- Datos de factura -->
+
+                    <section
+                        class="invoice-fields
+                        {% if form.tipo_documento.value != 'factura' %}
+                            is-hidden
+                        {% endif %}"
+                        data-invoice-fields
+                    >
+
+                        <div class="secure-payment-note invoice-note">
+
+                            <span>
+                                🏢
+                            </span>
+
+                            <span>
+
+                                <strong>
+                                    Datos para factura
+                                </strong>
+
+                                <small>
+                                    Completa la información tributaria
+                                    de la empresa.
+                                </small>
+
+                            </span>
+
+                        </div>
+
+
+                        <label>
+
+                            {{ form.factura_rut.label }}
+
+                            {{ form.factura_rut }}
+
+                            {{ form.factura_rut.errors }}
+
+                        </label>
+
+
+                        <label>
+
+                            {{ form.factura_razon_social.label }}
+
+                            {{ form.factura_razon_social }}
+
+                            {{ form.factura_razon_social.errors }}
+
+                        </label>
+
+
+                        <label>
+
+                            {{ form.factura_giro.label }}
+
+                            {{ form.factura_giro }}
+
+                            {{ form.factura_giro.errors }}
+
+                        </label>
+
+
+                        <label>
+
+                            {{ form.factura_direccion.label }}
+
+                            {{ form.factura_direccion }}
+
+                            {{ form.factura_direccion.errors }}
+
+                        </label>
+
+
+                        <label>
+
+                            {{ form.factura_email.label }}
+
+                            {{ form.factura_email }}
+
+                            {{ form.factura_email.errors }}
+
+                        </label>
+
+                    </section>
+
+
+                    <!-- =====================================================
+                         FORMA DE PAGO
+                         ===================================================== -->
+
+                    <fieldset class="payment-fieldset">
+
+                        <legend>
+                            Forma de pago
+                        </legend>
+
+                        <div class="payment-options">
+
+                            <label class="payment-option">
+
+                                <input
+                                    type="radio"
+                                    name="metodo_pago"
+                                    value="tienda"
+                                    {% if form.metodo_pago.value != 'tarjeta' %}
+                                        checked
+                                    {% endif %}
+                                >
+
+                                <span class="payment-icon">
+                                    🏪
+                                </span>
+
+                                <span>
+
+                                    <strong>
+                                        Pagar al retirar
+                                    </strong>
+
+                                    <small>
+                                        Pagas directamente en la tienda.
+                                    </small>
+
+                                </span>
+
+                            </label>
+
+
+                            <label class="payment-option">
+
+                                <input
+                                    type="radio"
+                                    name="metodo_pago"
+                                    value="tarjeta"
+                                    {% if form.metodo_pago.value == 'tarjeta' %}
+                                        checked
+                                    {% endif %}
+                                >
+
+                                <span class="payment-icon">
+                                    💳
+                                </span>
+
+                                <span>
+
+                                    <strong>
+                                        Pagar con tarjeta
+                                    </strong>
+
+                                    <small>
+                                        Pago inmediato en el prototipo.
+                                    </small>
+
+                                </span>
+
+                            </label>
+
+                        </div>
+
+                        {{ form.metodo_pago.errors }}
+
+                    </fieldset>
+
+
+                    <!-- Datos de tarjeta -->
+
+                    <section
+                        class="card-payment-fields
+                        {% if form.metodo_pago.value != 'tarjeta' %}
+                            is-hidden
+                        {% endif %}"
+                        data-card-fields
+                    >
+
+                        <div class="secure-payment-note">
+
+                            <span>
+                                🔒
+                            </span>
+
+                            <span>
+
+                                <strong>
+                                    Datos protegidos
+                                </strong>
+
+                                <small>
+                                    El sistema no guarda el número completo
+                                    ni el CVV.
+                                </small>
+
+                            </span>
+
+                        </div>
+
+
+                        <label>
+
+                            {{ form.titular_tarjeta.label }}
+
+                            {{ form.titular_tarjeta }}
+
+                            {{ form.titular_tarjeta.errors }}
+
+                        </label>
+
+
+                        <div class="card-number-control">
+
+                            <div class="card-number-label-row">
+
+                                <label for="{{ form.numero_tarjeta.id_for_label }}">
+                                    {{ form.numero_tarjeta.label }}
+                                </label>
+
+                                <span
+                                    class="card-brand-badge is-empty"
+                                    id="card-brand-status"
+                                    data-card-brand
+                                    aria-live="polite"
+                                >
+                                    Sin detectar
+                                </span>
+
+                            </div>
+
+
+                            {{ form.numero_tarjeta }}
+
+
+                            <small
+                                class="card-number-help"
+                                id="card-number-help"
+                            >
+                                Solo números. Mínimo 13 y máximo 19 dígitos.
+                            </small>
+
+
+                            {{ form.numero_tarjeta.errors }}
+
+                        </div>
+
+
+                        <div class="card-fields-row">
+
+                            <label>
+
+                                {{ form.vencimiento_tarjeta.label }}
+
+                                {{ form.vencimiento_tarjeta }}
+
+                                {{ form.vencimiento_tarjeta.errors }}
+
+                            </label>
+
+
+                            <label>
+
+                                {{ form.cvv_tarjeta.label }}
+
+                                {{ form.cvv_tarjeta }}
+
+                                {{ form.cvv_tarjeta.errors }}
+
+                            </label>
+
+                        </div>
+
+
+                        <p class="demo-payment-warning">
+                            Modo demostración: no realiza un cobro bancario real.
+                        </p>
+
+                    </section>
+
+
+                    <!-- Observación -->
+
+                    <label>
+
+                        {{ form.observacion.label }}
+
+                        {{ form.observacion }}
+
+                        {{ form.observacion.errors }}
+
+                    </label>
+
+
+                    <!-- =====================================================
+                         DESGLOSE DEL IVA
+                         ===================================================== -->
+
+                    <section
+                        class="tax-summary"
+                        aria-label="Desglose del total"
+                    >
+
+                        <div>
+
+                            <span>
+                                Neto
+                            </span>
+
+                            <strong>
+                                ${{ neto|floatformat:0 }}
+                            </strong>
+
+                        </div>
+
+
+                        <div>
+
+                            <span>
+                                IVA (19%)
+                            </span>
+
+                            <strong>
+                                ${{ iva|floatformat:0 }}
+                            </strong>
+
+                        </div>
+
+
+                        <div class="total-row">
+
+                            <span>
+                                Total con IVA
+                            </span>
+
+                            <strong>
+                                ${{ total|floatformat:0 }}
+                            </strong>
+
+                        </div>
+
+                    </section>
+
+
+                    <button
+                        type="submit"
+                        class="btn btn-primary btn-block"
+                        data-submit-order
+                    >
+
+                        {% if form.metodo_pago.value == 'tarjeta' %}
+
+                            Pagar y generar pedido
+
+                        {% else %}
+
+                            Generar pedido para retiro
+
+                        {% endif %}
+
+                    </button>
+
+                </form>
+
+            </aside>
+
+        </section>
+
+
     {% else %}
-    <section class="empty-state large">
-        <span>🛒</span>
-        <h2>Tu carrito está vacío</h2>
-        <p>Agrega productos desde el catálogo para realizar una compra.</p>
-        <a class="btn btn-primary" href="{% url 'catalogo' %}">Ver productos</a>
-    </section>
+
+        <!-- =====================================================
+             CARRITO VACÍO
+             ===================================================== -->
+
+        <section class="empty-state large">
+
+            <span>
+                🛒
+            </span>
+
+            <h2>
+                Tu carrito está vacío
+            </h2>
+
+            <p>
+                Agrega productos desde el catálogo para realizar una compra.
+            </p>
+
+            <a
+                class="btn btn-primary"
+                href="{% url 'catalogo' %}"
+            >
+                Ver productos
+            </a>
+
+        </section>
+
     {% endif %}
+
 </main>
+
 {% endblock %}
