@@ -8,20 +8,14 @@ from . import views_stock
 
 
 urlpatterns = [
-    # =====================================================
-    # CATÁLOGO
-    # =====================================================
-
+    # Catálogo
     path(
         "",
         views.catalogo,
         name="catalogo",
     ),
 
-    # =====================================================
-    # CARRITO CON RESERVA DE STOCK
-    # =====================================================
-
+    # Carrito con stock automático
     path(
         "carrito/",
         views_carrito.carrito,
@@ -46,10 +40,7 @@ urlpatterns = [
         name="eliminar_carrito",
     ),
 
-    # =====================================================
-    # PEDIDOS DEL CLIENTE
-    # =====================================================
-
+    # Crear pedido
     path(
         "pedido/crear/",
         views_carrito.crear_pedido,
@@ -62,10 +53,7 @@ urlpatterns = [
         name="pedido_exito",
     ),
 
-    # =====================================================
-    # INICIO DE SESIÓN
-    # =====================================================
-
+    # Autenticación
     path(
         "login/",
         views.InicioSesionView.as_view(),
@@ -90,20 +78,14 @@ urlpatterns = [
         name="logout",
     ),
 
-    # =====================================================
-    # PANEL DON JOSÉ
-    # =====================================================
-
+    # Panel administrativo
     path(
         "panel/",
         views.dashboard,
         name="dashboard",
     ),
 
-    # =====================================================
-    # PRODUCTOS
-    # =====================================================
-
+    # Productos
     path(
         "panel/productos/nuevo/",
         views.producto_crear,
@@ -128,10 +110,7 @@ urlpatterns = [
         name="exportar_productos_csv",
     ),
 
-    # =====================================================
-    # PEDIDOS DEL PANEL
-    # =====================================================
-
+    # Pedidos
     path(
         "panel/pedidos/",
         views.pedidos_panel,
